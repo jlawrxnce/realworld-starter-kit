@@ -19,8 +19,8 @@ import db from "../db";
 
 export interface BaseDoc {
   _id: ObjectId;
-  dateCreated: Date;
-  dateUpdated: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type WithoutBase<T extends BaseDoc> = Omit<T, keyof BaseDoc>;
@@ -40,19 +40,19 @@ export default class DocCollection<Schema extends BaseDoc> {
    * This method removes "illegal" fields from an item
    * so the client cannot fake them.
    */
-  private sanitizeItem(item: Partial<Schema>) {
-    delete item._id;
-    delete item.dateCreated;
-    delete item.dateUpdated;
+  private sanitizeItem(item: Partial<Schema>, sanitizeId: boolean = true) {
+    if (sanitizeId) delete item._id;
+    delete item.createdAt;
+    delete item.updatedAt;
   }
 
   /**
    * Add `item` to the collection. Returns the _id of the inserted document.
    */
-  async createOne(item: Partial<Schema>): Promise<ObjectId> {
-    this.sanitizeItem(item);
-    item.dateCreated = new Date();
-    item.dateUpdated = new Date();
+  async createOne(item: Partial<Schema>, sanitizeId: boolean = true): Promise<ObjectId> {
+    this.sanitizeItem(item, sanitizeId);
+    item.createdAt = new Date().toISOString();
+    item.updatedAt = new Date().toISOString();
     return (await this.collection.insertOne(item as OptionalUnlessRequiredId<Schema>)).insertedId;
   }
 
@@ -62,8 +62,8 @@ export default class DocCollection<Schema extends BaseDoc> {
   async createMany(items: Partial<Schema>[], options?: BulkWriteOptions): Promise<Record<number, ObjectId>> {
     items.forEach((item) => {
       this.sanitizeItem(item);
-      item.dateCreated = new Date();
-      item.dateUpdated = new Date();
+      item.createdAt = new Date().toISOString();
+      item.updatedAt = new Date().toISOString();
     });
     return (await this.collection.insertMany(items as OptionalUnlessRequiredId<Schema>[], options)).insertedIds;
   }
@@ -96,7 +96,7 @@ export default class DocCollection<Schema extends BaseDoc> {
    */
   async partialUpdateOne(filter: Filter<Schema>, update: Partial<Schema>, options?: FindOneAndUpdateOptions): Promise<UpdateResult<Schema>> {
     this.sanitizeItem(update);
-    update.dateUpdated = new Date();
+    update.updatedAt = new Date().toISOString();
     return await this.collection.updateOne(filter, { $set: update }, options);
   }
 

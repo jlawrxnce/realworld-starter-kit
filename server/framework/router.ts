@@ -97,13 +97,14 @@ export class Router {
 
   private makeRoute(f: Function, validator?: ZodSchema) {
     const argNames = getParamNames(f);
-
     return async (req: Request, res: Response) => {
       const reqMap = (name: string) => {
+        console.log("headers" + JSON.stringify(req.headers));
         if (name === "session" || name == "param" || name == "query" || name == "body") {
           return req[name];
         }
         const ret = req.params[name] || req.query[name] || req.body[name];
+
         if (ret === undefined || ret === null) {
           // TODO: Can we know if this param was required?
           return undefined;

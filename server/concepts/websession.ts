@@ -1,6 +1,6 @@
 import { SessionData } from "express-session";
 import { ObjectId } from "mongodb";
-import { NotAllowedError, UnauthenticatedError } from "./errors";
+import { UnauthenticatedError } from "./errors";
 
 export type WebSessionDoc = SessionData;
 
@@ -15,13 +15,7 @@ declare module "express-session" {
 
 export default class WebSessionConcept {
   start(session: WebSessionDoc, user: ObjectId) {
-    this.isLoggedOut(session);
     session.user = user.toString();
-  }
-
-  end(session: WebSessionDoc) {
-    this.isLoggedIn(session);
-    session.user = undefined;
   }
 
   getUser(session: WebSessionDoc) {
@@ -30,14 +24,9 @@ export default class WebSessionConcept {
   }
 
   isLoggedIn(session: WebSessionDoc) {
+    console.log("session.user" + session.user);
     if (session.user === undefined) {
       throw new UnauthenticatedError("Must be logged in!");
-    }
-  }
-
-  isLoggedOut(session: WebSessionDoc) {
-    if (session.user !== undefined) {
-      throw new NotAllowedError("Must be logged out!");
     }
   }
 }

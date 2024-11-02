@@ -23,23 +23,21 @@ export default class FollowerConcept {
     return { msg: "Comment successfully created!", follower: await this.followers.readOne({ _id }) };
   }
 
-  async delete(_id: ObjectId, targetId: ObjectId) {
-    await this.followers.deleteOne({ _id, targetId });
+  async delete(userId: ObjectId, target: ObjectId) {
+    await this.followers.deleteOne({ userId, target });
     return { msg: "Comment deleted successfully!" };
   }
 
   async getFollowers(query: Filter<FollowerDoc>) {
-    const comments = await this.followers.readMany(query, {
+    const followers = await this.followers.readMany(query, {
       sort: { dateUpdated: -1 },
     });
-    return comments;
+    return followers;
   }
 
-  async getFollowersByUserId(userId: ObjectId) {
-    return await this.getFollowers({ userId });
-  }
-
-  async getFollowsByUserId(target: ObjectId) {
-    return await this.getFollowers({ target });
+  // TODO: Make sure param naming is consistent
+  async isFollowing(userId: ObjectId, target: ObjectId) {
+    const follower = await this.followers.readOne({ userId, target });
+    return follower != null;
   }
 }

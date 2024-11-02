@@ -2,11 +2,13 @@ import { ObjectId } from "mongodb";
 
 import DocCollection, { BaseDoc } from "../framework/doc";
 import { BadValuesError, NotAllowedError, NotFoundError } from "./errors";
+import { UserMessage } from "types/types";
 
 // TODO: separate out email
 export interface AccountDoc extends BaseDoc {
   username: string;
-  password: string;
+  password?: string;
+  token: string;
   email: string;
 }
 
@@ -20,7 +22,10 @@ export default class AccountConcept {
   async create(username: string, password: string, email: string) {
     await this.assertGoodCredentials(username, password, email);
     const _id = await this.accounts.createOne({ username, password, email });
-    return { msg: "User created successfully!", user: await this.accounts.readOne({ _id }) };
+    const account = await this.accounts.readOne({ _id });
+
+    if (!account) throw new NotFoundError("Account not created");
+    return this.sanitizeUser(account);
   }
 
   async authenticate(email: string, password: string) {
@@ -28,7 +33,7 @@ export default class AccountConcept {
     if (!user) {
       throw new NotAllowedError("Email or password is incorrect.");
     }
-    return { msg: "Successfully authenticated.", _id: user._id };
+    return user._id;
   }
 
   async getAccountById(_id: ObjectId) {
@@ -47,22 +52,23 @@ export default class AccountConcept {
     return this.sanitizeUser(account);
   }
 
-  async update(_id: ObjectId, username: string, email: string, password: string) {
-    // TODO: make this more scalable
-    if (username) await this.updateUsername(_id, username);
-    if (password) await this.updatePassword(_id, password);
-    if (email) await this.updateEmail(_id, email);
+  async update(_id: ObjectId, updates: Partial<UserMessage>) {
+    if (updates.username) await this.updateUsername(_id, updates.username);
+    if (updates.password) await this.updatePassword(_id, updates.password);
+    if (updates.email) await this.updateEmail(_id, updates.email);
+    return this.getAccountById(_id);
   }
 
   private async updateUsername(_id: ObjectId, username: string) {
-    await this.assertUsernameUnique(username);
+    // await this.assertUnique("username", username);
     await this.accounts.partialUpdateOne({ _id }, { username });
     return { msg: "Username updated successfully!" };
   }
 
   private async updateEmail(_id: ObjectId, email: string) {
+    // await this.assertUnique("email", email);
     await this.accounts.partialUpdateOne({ _id }, { email });
-    return { msg: "Username updated successfully!" };
+    return { msg: "email updated successfully!" };
   }
 
   private async updatePassword(_id: ObjectId, newPassword: string) {
@@ -79,12 +85,13 @@ export default class AccountConcept {
     if (!username || !password || !email) {
       throw new BadValuesError("Username, password, and email must be non-empty!");
     }
-    await this.assertUsernameUnique(username);
+    await this.assertUnique("username", username);
+    await this.assertUnique("email", email);
   }
 
-  private async assertUsernameUnique(username: string) {
-    if (await this.accounts.readOne({ username })) {
-      throw new NotAllowedError(`User with username ${username} already exists!`);
+  private async assertUnique(field: string, value: string) {
+    if (await this.accounts.readOne({ [field]: value })) {
+      throw new NotAllowedError(`User with ${field} ${value} already exists!`);
     }
   }
 
