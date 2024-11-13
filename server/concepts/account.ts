@@ -8,7 +8,6 @@ import { UserMessage } from "types/types";
 export interface AccountDoc extends BaseDoc {
   username: string;
   password?: string;
-  token: string;
   email: string;
 }
 

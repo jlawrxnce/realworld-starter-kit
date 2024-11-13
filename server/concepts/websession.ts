@@ -24,7 +24,6 @@ export default class WebSessionConcept {
   }
 
   isLoggedIn(session: WebSessionDoc) {
-    console.log("session.user" + session.user);
     if (session.user === undefined) {
       throw new UnauthenticatedError("Must be logged in!");
     }

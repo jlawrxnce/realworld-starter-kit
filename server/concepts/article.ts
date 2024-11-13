@@ -64,12 +64,14 @@ export default class ArticleConcept {
 
   async update(_id: ObjectId, updates: Partial<ArticleDoc>) {
     await this.articles.partialUpdateOne({ _id }, { ...updates });
-    return { msg: "Article successfully updated!" };
+    const article = await this.articles.readOne({ _id });
+    if (article == null) throw new NotFoundError("Article was not properly updated");
+    return article;
   }
 
   async deleteBySlug(slug: String) {
-    await this.articles.deleteOne({ slug });
-    return { msg: "Article deleted successfully!" };
+    const _id = await this.articles.deleteOne({ slug });
+    return _id;
   }
 
   private async assertAuthorIsUser(_id: ObjectId, user: ObjectId) {

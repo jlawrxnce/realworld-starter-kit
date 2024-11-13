@@ -11,7 +11,7 @@ export default class MergeConcept {
   }
 
   createProfileMessage(profile: ProfileDoc, following: boolean): ProfileMessage {
-    return { username: profile.username, bio: "", image: "", following };
+    return { username: profile.username, bio: profile.bio ?? "", image: profile.image ?? "", following };
   }
 
   createArticleMessage(article: ArticleDoc, author: ProfileMessage, tagList: Array<string>, favorited: boolean, favoritesCount: number): ArticleMessage {

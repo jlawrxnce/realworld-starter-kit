@@ -28,6 +28,11 @@ export default class CommentConcept {
     return { msg: "Comment deleted successfully!" };
   }
 
+  async deleteByTarget(target: ObjectId) {
+    await this.comments.deleteMany({ target });
+    return { msg: "Comments deleted successfully!" };
+  }
+
   async getCommentsByTarget(target: ObjectId) {
     return await this.comments.readMany({ target });
   }

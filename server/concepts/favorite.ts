@@ -20,12 +20,17 @@ export default class FavoriteConcept {
 
   async create(userId: ObjectId, target: ObjectId) {
     const _id = await this.favorites.createOne({ userId, target });
-    return { msg: "Comment successfully created!", favorite: await this.favorites.readOne({ _id }) };
+    return { msg: "Favorite successfully created!", favorite: await this.favorites.readOne({ _id }) };
   }
 
   async delete(userId: ObjectId, target: ObjectId) {
     await this.favorites.deleteOne({ userId, target });
-    return { msg: "Comment deleted successfully!" };
+    return { msg: "Favorite deleted successfully!" };
+  }
+
+  async deleteByTarget(target: ObjectId) {
+    await this.favorites.deleteMany({ target });
+    return { msg: "Favorites deleted successfully!" };
   }
 
   async getFavorites(query: Filter<FavoriteDoc>) {
@@ -42,6 +47,6 @@ export default class FavoriteConcept {
 
   async isFavoritedByUser(userId: ObjectId, target: ObjectId) {
     const favorite = await this.getFavorites({ userId, target });
-    return favorite == null;
+    return favorite.length != 0;
   }
 }

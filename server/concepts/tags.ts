@@ -23,8 +23,14 @@ export default class TagConcept {
     return this.tags.readMany({ target });
   }
 
-  async delete(_id: ObjectId, targetId: ObjectId) {
-    await this.tags.deleteOne({ _id, targetId });
+  async update(target: ObjectId, tags: Array<string>) {
+    // wipe old tags and make new ones
+    await this.deleteByTarget(target);
+    return await this.create(target, tags);
+  }
+
+  async deleteByTarget(targetId: ObjectId) {
+    await this.tags.deleteMany({ targetId });
     return { msg: "Comment deleted successfully!" };
   }
 

@@ -99,9 +99,11 @@ export class Router {
     const argNames = getParamNames(f);
     return async (req: Request, res: Response) => {
       const reqMap = (name: string) => {
-        console.log("headers" + JSON.stringify(req.headers));
         if (name === "session" || name == "param" || name == "query" || name == "body") {
           return req[name];
+        }
+        if (name === "auth") {
+          return req.headers["authorization"];
         }
         const ret = req.params[name] || req.query[name] || req.body[name];
 

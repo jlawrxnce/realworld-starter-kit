@@ -18,7 +18,7 @@ export default class JwtConcept {
   async create(_id: ObjectId, username: string) {
     // JWT
     const jwt = this.generateJWT(_id.toString(), username);
-    const token = await this.jwts.createOne({ _id, jwt });
+    const token = await this.jwts.createOne({ _id, jwt }, false);
 
     if (!token) throw new NotFoundError("Jwt not created");
     return jwt;
@@ -36,6 +36,9 @@ export default class JwtConcept {
   async authenticate(_id: ObjectId, jwt: string) {
     const token = await this.jwts.readOne({ _id });
     if (!token) throw new NotFoundError("No jwt exists for user: " + _id.toString());
+    // Replace standard bearer string
+    jwt = jwt.replace("Bearer ", "");
+
     if (token.jwt != jwt) throw new NotAllowedError("Jwt token does not match for request");
     return token.jwt;
   }
