@@ -37,9 +37,9 @@ export default class JwtConcept {
     const token = await this.jwts.readOne({ _id });
     if (!token) throw new NotFoundError("No jwt exists for user: " + _id.toString());
     // Replace standard bearer string
+    jwt = jwt.replace("Token ", "");
     jwt = jwt.replace("Bearer ", "");
-
-    if (token.jwt != jwt) throw new NotAllowedError("Jwt token does not match for request");
+    if (token.jwt.trim() != jwt.trim()) throw new NotAllowedError("Jwt token does not match for request");
     return token.jwt;
   }
 

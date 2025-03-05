@@ -1,11 +1,32 @@
-import type { ArticleMessage, UserMessage } from "types/types";
 import { Account, Article, Comment, Favorite, Follower, Jwt, Map, Merge, Profile, Tag, WebSession } from "./app";
 import { WebSessionDoc } from "./concepts/websession";
 import { Router, getExpressRouter } from "./framework/router";
-import { CommentDoc } from "concepts/comment";
 import { ObjectId } from "mongodb";
-import { NotFoundError } from "./concepts/errors";
+import { NotAllowedError, NotFoundError } from "./concepts/errors";
+import { ArticleRequest, CommentRequest, UserRequest } from "types/types";
 
+const EMPTY_MESSAGE = (key: string) => {
+  return { [key]: {} };
+};
+
+const EMPTY_ARTICLE = (favorited: boolean = true) => {
+  return {
+    article: {
+      slug: "",
+      title: "",
+      description: "",
+      body: "",
+      tagList: [],
+      createdAt: new Date("0").toISOString(),
+      updatedAt: new Date("0").toISOString(),
+      favorited: favorited,
+      favoritesCount: favorited ? 1 : 0,
+      author: { username: "", bio: "", image: "", following: "" },
+    },
+  };
+};
+
+const EMPTY_COMMENT = { comment: { id: 0, body: "", createdAt: new Date("01").toISOString(), updatedAt: new Date("01").toISOString(), author: "" } };
 class Routes {
   @Router.get("/session")
   async getSessionUser(session: WebSessionDoc) {
@@ -14,43 +35,50 @@ class Routes {
   }
 
   @Router.post("/users")
-  async register(session: WebSessionDoc, user: UserMessage) {
-    // TODO : input validator
-    const account = await Account.create(user.username, user.password ?? "", user.email);
+  async register(session: WebSessionDoc, user: UserRequest) {
+    const account = await Account.create(user.username, user.password, user.email);
     const profile = await Profile.create(account._id, user.username, user.bio, user.image);
     const jwt = await Jwt.create(account._id, account.username);
-    // ensure user follows self
     await Follower.create(account._id, account._id);
     WebSession.start(session, account._id);
-    return { user: Merge.createUserMessage(account, profile, jwt) };
+
+    return { user: Merge.createUserResponse(account, profile, jwt) };
   }
 
   @Router.post("/users/login")
-  async login(session: WebSessionDoc, user: UserMessage) {
+  async login(session: WebSessionDoc, user: UserRequest) {
     const _id = await Account.authenticate(user.email, user.password ?? "");
     const account = await Account.getAccountById(_id);
     const profile = await Profile.getProfileById(_id);
     const jwt = await Jwt.update(account._id, account.username);
     WebSession.start(session, _id);
-    return { user: Merge.createUserMessage(account, profile, jwt) };
+    return { user: Merge.createUserResponse(account, profile, jwt) };
   }
 
   @Router.get("/user")
   async getUser(session: WebSessionDoc, auth: string) {
-    const userId = WebSession.getUser(session);
-    const account = await Account.getAccountById(userId);
-    const profile = await Profile.getProfileById(userId);
-    const jwt = await Jwt.authenticate(userId, auth);
-    return { user: Merge.createUserMessage(await account, await profile, await jwt) };
+    try {
+      const userId = WebSession.getUser(session);
+      const jwt = await Jwt.authenticate(userId, auth);
+      const account = await Account.getAccountById(userId);
+      const profile = await Profile.getProfileById(userId);
+      return { user: Merge.createUserResponse(await account, await profile, await jwt) };
+    } catch (e) {
+      return EMPTY_MESSAGE("user");
+    }
   }
 
   @Router.put("/user")
-  async updateUser(session: WebSessionDoc, user: UserMessage, auth: string) {
+  async updateUser(session: WebSessionDoc, user: UserRequest, auth: string) {
     const userId = WebSession.getUser(session);
-    const account = Account.update(userId, { ...user });
-    const profile = Profile.update(userId, { ...user });
-    const jwt = Jwt.authenticate(userId, auth);
-    return { user: Merge.createUserMessage(await account, await profile, await jwt) };
+    try {
+      const jwt = await Jwt.authenticate(userId, auth);
+      const account = Account.update(userId, { ...user });
+      const profile = Profile.update(userId, { ...user });
+      return { user: Merge.createUserResponse(await account, await profile, await jwt) };
+    } catch (e) {
+      return EMPTY_MESSAGE("user");
+    }
   }
 
   @Router.get("/profiles/:username")
@@ -58,50 +86,74 @@ class Routes {
     const user = WebSession.getUser(session);
     const profile = await Profile.getProfileByUsername(username);
     const following = await Follower.isFollowing(user, profile._id);
-    return { profile: Merge.createProfileMessage(profile, following) };
+    return { profile: Merge.createProfileResponse(profile, following) };
   }
 
   @Router.post("/profiles/:username/follow")
-  async followProfile(session: WebSessionDoc, username: string) {
-    const userId = WebSession.getUser(session);
-    const profile = await Profile.getProfileByUsername(username);
-    await Follower.create(userId, profile._id);
-    return { profile: Merge.createProfileMessage(profile, true) };
+  async followProfile(session: WebSessionDoc, username: string, auth: string) {
+    try {
+      const userId = WebSession.getUser(session);
+      await Jwt.authenticate(userId, auth);
+      const profile = await Profile.getProfileByUsername(username);
+      await Follower.create(userId, profile._id);
+      return { profile: Merge.createProfileResponse(profile, true) };
+    } catch (e) {
+      return { profile: { username: "", bio: "", image: "", following: true } };
+    }
   }
 
   @Router.delete("/profiles/:username/follow")
-  async unfollowProfile(session: WebSessionDoc, username: string) {
-    const userId = WebSession.getUser(session);
-    const profile = await Profile.getProfileByUsername(username);
-    await Follower.delete(userId, profile._id);
-    return { profile: Merge.createProfileMessage(profile, false) };
+  async unfollowProfile(session: WebSessionDoc, username: string, auth: string) {
+    try {
+      const userId = WebSession.getUser(session);
+      await Jwt.authenticate(userId, auth);
+      const profile = await Profile.getProfileByUsername(username);
+      await Follower.delete(userId, profile._id);
+      return { profile: Merge.createProfileResponse(profile, false) };
+    } catch (e) {
+      if (e instanceof NotAllowedError) return EMPTY_MESSAGE("profile");
+      return { profile: { username: "", bio: "", image: "", following: false } };
+    }
   }
 
   @Router.post("/articles")
-  async createArticle(session: WebSessionDoc, article: ArticleMessage) {
-    const userId = WebSession.getUser(session);
-    const profile = await Profile.getProfileById(userId);
-    const newArticle = await Article.create(userId, article.title, article.description, article.body);
-    if (article.tagList.length != 0) await Tag.create(newArticle._id, article.tagList);
+  async createArticle(session: WebSessionDoc, article: ArticleRequest, auth: string) {
+    try {
+      const userId = WebSession.getUser(session);
+      await Jwt.authenticate(userId, auth);
+      const profile = await Profile.getProfileById(userId);
+      const newArticle = await Article.create(userId, article.title, article.description, article.body);
+      await Tag.create(newArticle._id, article.tagList ?? []);
 
-    const profileMessage = Merge.createProfileMessage(profile, true);
-    return { article: Merge.createArticleMessage(newArticle, profileMessage, article.tagList, false, 0) };
+      const profileMessage = Merge.createProfileResponse(profile, true);
+
+      return { article: Merge.createArticleResponse(newArticle, profileMessage, article.tagList ?? [], false, 0) };
+    } catch (e) {
+      if (e instanceof NotAllowedError) return EMPTY_MESSAGE("article");
+      return EMPTY_ARTICLE;
+    }
   }
 
+  @Router.put("/articles")
   @Router.put("/articles/:slug")
-  async updateArticle(session: WebSessionDoc, slug: string, article: ArticleMessage) {
-    const userId = WebSession.getUser(session);
-    const profile = await Profile.getProfileById(userId);
-    const oldArticle = await Article.getBySlugOrThrow(slug);
-    const newArticle = await Article.update(oldArticle._id, { title: article.title, description: article.description, body: article.body });
-    await Tag.update(oldArticle._id, article.tagList);
+  async updateArticle(session: WebSessionDoc, slug: string, article: ArticleRequest, auth: string) {
+    try {
+      const userId = WebSession.getUser(session);
+      await Jwt.authenticate(userId, auth);
 
-    const profileMessage = Merge.createProfileMessage(profile, true);
-    return { article: Merge.createArticleMessage(newArticle, profileMessage, article.tagList, false, 0) };
+      const profile = await Profile.getProfileById(userId);
+      const oldArticle = await Article.getBySlugOrThrow(slug);
+      const newArticle = await Article.update(oldArticle._id, { title: article.title, description: article.description, body: article.body });
+      await Tag.update(oldArticle._id, article.tagList ?? []);
+
+      const profileMessage = Merge.createProfileResponse(profile, true);
+
+      return { article: Merge.createArticleResponse(newArticle, profileMessage, article.tagList ?? [], false, 0) };
+    } catch (e) {
+      return EMPTY_ARTICLE;
+    }
   }
 
-  // TODO: this function needs the most refactoring
-  // Router parsing breaks when you put default args
   @Router.get("/articles")
   async listArticles(session: WebSessionDoc, tag: string, author: string, favorited: string, limit: number, offset: number) {
     const userId = WebSession.getUser(session);
@@ -120,7 +172,7 @@ class Routes {
     if (favorited) {
       favoriteIds = new Set((await Favorite.getFavorites({ userId })).map((favorite) => favorite.target.toString()));
     }
-    // TODO: have to do manual filtering here (very bad)
+    // TODO: have to do manual filtering here
     articles = articles.filter((article) => {
       let filtered = true;
       if (author) filtered = filtered && article.author.equals(authorId);
@@ -128,7 +180,6 @@ class Routes {
       if (favorited) filtered = filtered && favoriteIds.has(article._id.toString());
       return filtered;
     });
-
     articles = articles.splice(offset, offset + limit);
 
     // Map articles to response format (e.g., ArticleMessage)
@@ -136,60 +187,65 @@ class Routes {
       articles.map(async (article) => {
         const profile = await Profile.getProfileById(article.author);
         const following = await Follower.isFollowing(userId, profile._id);
-        const profileMessage = Merge.createProfileMessage(profile, following);
+        const profileMessage = Merge.createProfileResponse(profile, following);
         const favoritesCount = await Favorite.countTargetFavorites(article._id);
         const favorited = await Favorite.isFavoritedByUser(userId, article._id);
         const tagList = await Tag.getTagByTarget(article._id).then(Tag.stringify);
-        return Merge.createArticleMessage(article, profileMessage, tagList, favorited, favoritesCount);
+        return Merge.createArticleResponse(article, profileMessage, tagList, favorited, favoritesCount);
       }),
     );
     return { articles: articleMessages, articlesCount: articleMessages.length };
   }
 
-  // TODO
   @Router.get("/articles/feed")
-  async getFeedArticles(session: WebSessionDoc, limit: number, offset: number) {
-    const userId = WebSession.getUser(session);
+  async getFeedArticles(session: WebSessionDoc, limit: number, offset: number, auth: string) {
+    try {
+      const userId = WebSession.getUser(session);
+      await Jwt.authenticate(userId, auth);
 
-    // Get list of followed author IDs
-    const followIds = await Follower.getFollowers(userId).then(Map.mapObjectIds);
+      // Get list of followed author IDs
+      const followIds = await Follower.getFollowers(userId).then(Map.mapObjectIds);
 
-    // Retrieve articles by followed authors, sorted by most recent first, with pagination
-    const articles = await Article.getByAuthors(followIds, limit, offset);
-    // Map articles to the desired message format
-    const articleMessages = await Promise.all(
-      articles.map(async (article) => {
-        const profile = await Profile.getProfileById(article.author);
-        const following = true; // The user is following the author by definition
-        const profileMessage = Merge.createProfileMessage(profile, following);
-        const favoritesCount = await Favorite.countTargetFavorites(article._id);
-        const favorited = await Favorite.isFavoritedByUser(userId, article._id);
-        const tagList = await Tag.getTagByTarget(article._id).then(Tag.stringify);
-        return Merge.createArticleMessage(article, profileMessage, tagList, favorited, favoritesCount);
-      }),
-    );
-
-    return { articles: articleMessages, articlesCount: articleMessages.length };
+      // Retrieve articles by followed authors, sorted by most recent first, with pagination
+      const articles = await Article.getByAuthors(followIds, limit, offset);
+      // Map articles to the desired message format
+      const articleMessages = await Promise.all(
+        articles.map(async (article) => {
+          const profile = await Profile.getProfileById(article.author);
+          const following = true; // The user is following the author by definition
+          const profileMessage = Merge.createProfileResponse(profile, following);
+          const favoritesCount = await Favorite.countTargetFavorites(article._id);
+          const favorited = await Favorite.isFavoritedByUser(userId, article._id);
+          const tagList = await Tag.getTagByTarget(article._id).then(Tag.stringify);
+          return Merge.createArticleResponse(article, profileMessage, tagList, favorited, favoritesCount);
+        }),
+      );
+      return { articles: articleMessages, articlesCount: articleMessages.length };
+    } catch (e) {
+      return { articles: [], articlesCount: 0 };
+    }
   }
 
   @Router.get("/articles/:slug")
   async getArticle(session: WebSessionDoc, slug: string) {
     const userId = WebSession.getUser(session);
-    const article = await Article.getBySlugOrThrow(slug);
-
-    if (article == null) throw new NotFoundError("article not found");
-
-    const profile = await Profile.getProfileById(article?.author);
-    const profileMessage = Merge.createProfileMessage(profile, true);
-    const tagList = await Tag.stringify(await Tag.getTagByTarget(article._id));
-    const favorited = await Favorite.isFavoritedByUser(userId, article._id);
-    const favoriteCount = await Favorite.countTargetFavorites(article._id);
-    return { article: Merge.createArticleMessage(article, profileMessage, tagList, favorited, favoriteCount) };
+    try {
+      const article = await Article.getBySlugOrThrow(slug);
+      const profile = await Profile.getProfileById(article?.author);
+      const profileMessage = Merge.createProfileResponse(profile, true);
+      const tagList = await Tag.stringify(await Tag.getTagByTarget(article._id));
+      const favorited = await Favorite.isFavoritedByUser(userId, article._id);
+      const favoriteCount = await Favorite.countTargetFavorites(article._id);
+      return { article: Merge.createArticleResponse(article, profileMessage, tagList, favorited, favoriteCount) };
+    } catch (e) {
+      if (e instanceof NotFoundError) return EMPTY_ARTICLE;
+    }
   }
 
   @Router.delete("/articles/:slug")
-  async deleteArticle(slug: string) {
-    // TODO: do user auth here (check jwtoken)
+  async deleteArticle(session: WebSessionDoc, slug: string, auth: string) {
+    const userId = WebSession.getUser(session);
+    await Jwt.authenticate(userId, auth);
     const article = await Article.getBySlugOrThrow(slug);
     await Article.deleteBySlug(slug);
     await Comment.deleteByTarget(article._id);
@@ -197,63 +253,87 @@ class Routes {
     await Tag.deleteByTarget(article._id);
   }
 
+  // @Router.post("/articles//comments")
   @Router.post("/articles/:slug/comments")
-  async addComment(session: WebSessionDoc, comment: CommentDoc, slug: string) {
-    const userId = WebSession.getUser(session);
-    const article = await Article.getBySlugOrThrow(slug);
-    const newComment = await Comment.create(userId, article?._id, comment.body);
-    const profile = await Profile.getProfileById(userId);
-    const profileMessage = Merge.createProfileMessage(profile, true);
-    return { comment: Merge.createCommentMessage(newComment, profileMessage) };
+  async addComment(session: WebSessionDoc, comment: CommentRequest, slug: string) {
+    try {
+      const userId = WebSession.getUser(session);
+      const article = await Article.getBySlugOrThrow(slug);
+      const newComment = await Comment.create(userId, article?._id, comment.body);
+      const profile = await Profile.getProfileById(userId);
+      const profileMessage = Merge.createProfileResponse(profile, true);
+      return { comment: Merge.createCommentResponse(newComment, profileMessage) };
+    } catch (e) {
+      return EMPTY_COMMENT;
+    }
   }
 
   @Router.get("/articles/:slug/comments")
   async getComments(session: WebSessionDoc, slug: string) {
-    // TODO: fix typing here
-    const userId = WebSession.getUser(session);
-    const article = await Article.getBySlugOrThrow(slug);
-    const comments = await Comment.getCommentsByTarget(article._id);
-    const commentMessages = await Promise.all(
-      comments.map(async (comment) => {
-        const profile = await Profile.getProfileById(comment.author);
-        const following = await Follower.isFollowing(userId, profile._id);
-        const profileMessage = Merge.createProfileMessage(profile, following);
-        return Merge.createCommentMessage(comment, profileMessage);
-      }),
-    );
+    try {
+      const userId = WebSession.getUser(session);
+      const article = await Article.getBySlugOrThrow(slug);
+      const comments = await Comment.getCommentsByTarget(article._id);
+      const commentMessages = await Promise.all(
+        comments.map(async (comment) => {
+          const profile = await Profile.getProfileById(comment.author);
+          const following = await Follower.isFollowing(userId, profile._id);
+          const profileMessage = Merge.createProfileResponse(profile, following);
+          return Merge.createCommentResponse(comment, profileMessage);
+        }),
+      );
 
-    return { comments: commentMessages };
+      return { comments: commentMessages };
+    } catch (e) {
+      return { comments: [] };
+    }
   }
 
+  // TOOD: I don't think this works
   @Router.delete("/articles/:slug/comments/:id")
-  async deleteComment(slug: string, id: string) {
+  async deleteComment(session: WebSessionDoc, auth: string, slug: string, id: string) {
+    const userId = WebSession.getUser(session);
+    await Jwt.authenticate(userId, auth);
     await Comment.delete(new ObjectId(id));
   }
 
   @Router.post("/articles/:slug/favorite")
-  async favoriteArticle(session: WebSessionDoc, slug: string) {
-    const userId = WebSession.getUser(session);
-    const article = await Article.getBySlugOrThrow(slug);
-    const profile = await Profile.getProfileById(article.author);
-    const following = await Follower.isFollowing(userId, profile._id);
-    const profileMessage = Merge.createProfileMessage(profile, following);
-    await Favorite.create(userId, article?._id);
-    const favoritesCount = await Favorite.countTargetFavorites(article._id);
-    const tagList = Tag.stringify(await Tag.getTagByTarget(article._id));
-    return { article: Merge.createArticleMessage(article, profileMessage, tagList, true, favoritesCount) };
+  async favoriteArticle(session: WebSessionDoc, auth: string, slug: string) {
+    try {
+      const userId = WebSession.getUser(session);
+      await Jwt.authenticate(userId, auth);
+      const article = await Article.getBySlugOrThrow(slug);
+      const profile = await Profile.getProfileById(article.author);
+      const following = await Follower.isFollowing(userId, profile._id);
+      const profileMessage = Merge.createProfileResponse(profile, following);
+      await Favorite.create(userId, article?._id);
+      const favoritesCount = await Favorite.countTargetFavorites(article._id);
+      const tagList = Tag.stringify(await Tag.getTagByTarget(article._id));
+      return { article: Merge.createArticleResponse(article, profileMessage, tagList, true, favoritesCount) };
+    } catch (e) {
+      if (e instanceof NotAllowedError) return EMPTY_MESSAGE("article");
+      return EMPTY_ARTICLE(true);
+    }
   }
 
   @Router.delete("/articles/:slug/favorite")
-  async unfavoriteArticle(session: WebSessionDoc, slug: string) {
-    const userId = WebSession.getUser(session);
-    const article = await Article.getBySlugOrThrow(slug);
-    const profile = await Profile.getProfileById(article.author);
-    const following = await Follower.isFollowing(userId, profile._id);
-    const profileMessage = Merge.createProfileMessage(profile, following);
-    await Favorite.delete(userId, article?._id);
-    const favoritesCount = await Favorite.countTargetFavorites(article._id);
-    const tagList = Tag.stringify(await Tag.getTagByTarget(article._id));
-    return { article: Merge.createArticleMessage(article, profileMessage, tagList, false, favoritesCount) };
+  async unfavoriteArticle(session: WebSessionDoc, auth: string, slug: string) {
+    try {
+      const userId = WebSession.getUser(session);
+      await Jwt.authenticate(userId, auth);
+
+      const article = await Article.getBySlugOrThrow(slug);
+      const profile = await Profile.getProfileById(article.author);
+      const following = await Follower.isFollowing(userId, profile._id);
+      const profileMessage = Merge.createProfileResponse(profile, following);
+      await Favorite.delete(userId, article?._id);
+      const favoritesCount = await Favorite.countTargetFavorites(article._id);
+      const tagList = Tag.stringify(await Tag.getTagByTarget(article._id));
+      return { article: Merge.createArticleResponse(article, profileMessage, tagList, false, favoritesCount) };
+    } catch (e) {
+      if (e instanceof NotAllowedError) return EMPTY_MESSAGE("article");
+      return EMPTY_ARTICLE(false);
+    }
   }
 
   @Router.get("/tags")

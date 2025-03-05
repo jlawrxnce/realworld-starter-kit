@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 
 import DocCollection, { BaseDoc } from "../framework/doc";
 import { BadValuesError, NotAllowedError, NotFoundError } from "./errors";
-import { UserMessage } from "types/types";
+import { UserRequest } from "types/types";
 
 // TODO: separate out email
 export interface AccountDoc extends BaseDoc {
@@ -51,7 +51,7 @@ export default class AccountConcept {
     return this.sanitizeUser(account);
   }
 
-  async update(_id: ObjectId, updates: Partial<UserMessage>) {
+  async update(_id: ObjectId, updates: Partial<UserRequest>) {
     if (updates.username) await this.updateUsername(_id, updates.username);
     if (updates.password) await this.updatePassword(_id, updates.password);
     if (updates.email) await this.updateEmail(_id, updates.email);

@@ -2,19 +2,19 @@ import { AccountDoc } from "concepts/account";
 import { ArticleDoc } from "concepts/article";
 import { CommentDoc } from "concepts/comment";
 import { ProfileDoc } from "concepts/profile";
-import { ArticleMessage, CommentMessage, ProfileMessage, UserMessage } from "types/types";
+import { ArticleResponse, CommentResponse, ProfileResponse, UserResponse } from "types/types";
 
 export default class MergeConcept {
-  createUserMessage(account: AccountDoc, profile: ProfileDoc, token: string): UserMessage {
+  createUserResponse(account: AccountDoc, profile: ProfileDoc, token: string): UserResponse {
     // TODO: builder would be helpful for these functions
     return { username: account.username, email: account.email, token: token, bio: profile.bio, image: profile.image };
   }
 
-  createProfileMessage(profile: ProfileDoc, following: boolean): ProfileMessage {
+  createProfileResponse(profile: ProfileDoc, following: boolean): ProfileResponse {
     return { username: profile.username, bio: profile.bio ?? "", image: profile.image ?? "", following };
   }
 
-  createArticleMessage(article: ArticleDoc, author: ProfileMessage, tagList: Array<string>, favorited: boolean, favoritesCount: number): ArticleMessage {
+  createArticleResponse(article: ArticleDoc, author: ProfileResponse, tagList: Array<string>, favorited: boolean, favoritesCount: number): ArticleResponse {
     return {
       ...article,
       favorited,
@@ -24,7 +24,7 @@ export default class MergeConcept {
     };
   }
 
-  createCommentMessage(comment: CommentDoc, profile: ProfileMessage): CommentMessage {
+  createCommentResponse(comment: CommentDoc, profile: ProfileResponse): CommentResponse {
     const { target, _id: id, ...rest } = comment;
     return { ...rest, id, author: { ...profile } };
   }

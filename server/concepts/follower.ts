@@ -35,7 +35,6 @@ export default class FollowerConcept {
     return followers;
   }
 
-  // TODO: Make sure param naming is consistent
   async isFollowing(userId: ObjectId, target: ObjectId) {
     const follower = await this.followers.readOne({ userId, target });
     return follower != null;

@@ -1,54 +1,69 @@
 import { ObjectId } from "mongodb";
 
-export interface UserMessage {
-  username: string;
+export type UserRequest = {
   email: string;
-  password?: string;
-  token?: string;
-  bio: string;
+  username: string;
+  password: string;
   image: string;
-}
+  bio: string;
+};
 
-export interface ProfileMessage {
+export type ArticleRequest = {
+  title: string;
+  description: string;
+  body: string;
+  tagList?: Array<string>;
+};
+
+export type CommentRequest = {
+  body: string;
+};
+
+export type UserResponse = {
+  email: string;
+  token: string;
+  username: string;
+  bio: string;
+  image: string | null;
+};
+
+export type ProfileResponse = {
   username: string;
   bio: string;
   image: string;
   following: boolean;
-}
+};
 
-export interface ArticleBase {
+export type ArticleResponse = {
   slug: string;
   title: string;
-  tagList: string[];
   description: string;
+  body?: string;
+  tagList: string[];
   createdAt: string;
   updatedAt: string;
   favorited: boolean;
   favoritesCount: number;
-  author: ProfileMessage;
-}
+  author: ProfileResponse;
+};
 
-export interface ArticleMessage extends ArticleBase {
-  body: string;
-}
-
-export interface ArticlesMessage {
-  articles: Array<ArticleBase>;
+export type ArticlesResponse = {
+  articles: Array<ArticleResponse>;
   articlesCount: number;
-}
+};
 
-export interface CommentMessage {
+export type CommentResponse = {
   id: ObjectId;
   createdAt: string;
   updatedAt: string;
   body: string;
-  author: ProfileMessage;
-}
+  author: ProfileResponse;
+};
 
-export interface CommentsMessage {
-  comments: Array<CommentMessage>;
-}
+export type CommentsResponse = {
+  comments: Array<CommentResponse>;
+};
 
-export interface TagsMessage {
+export type TagsResponse = {
   tags: Array<String>;
-}
+};
