@@ -5,7 +5,7 @@ import { NotAllowedError, NotFoundError } from "./errors";
 import jwt from "jsonwebtoken";
 
 export interface JwtDoc extends BaseDoc {
-  jwt: string;
+  token: string;
 }
 
 export default class JwtConcept {
@@ -18,19 +18,20 @@ export default class JwtConcept {
   async create(_id: ObjectId, username: string) {
     // JWT
     const jwt = this.generateJWT(_id.toString(), username);
-    const token = await this.jwts.createOne({ _id, jwt }, false);
+    const token = await this.jwts.createOne({ _id, token: jwt }, false);
 
     if (!token) throw new NotFoundError("Jwt not created");
-    return jwt;
+    return token;
   }
 
   async update(_id: ObjectId, username: string) {
     // JWT
     const jwt = this.generateJWT(_id.toString(), username);
-    const token = await this.jwts.partialUpdateOne({ _id }, { jwt });
-
+    await this.jwts.partialUpdateOne({ _id }, { token: jwt });
+    const token = await this.jwts.readOne({ token: jwt });
+    console.log('token", token');
     if (!token) throw new NotFoundError("Jwt not created");
-    return jwt;
+    return token;
   }
 
   async authenticate(_id: ObjectId, jwt: string) {
@@ -39,8 +40,10 @@ export default class JwtConcept {
     // Replace standard bearer string
     jwt = jwt.replace("Token ", "");
     jwt = jwt.replace("Bearer ", "");
-    if (token.jwt.trim() != jwt.trim()) throw new NotAllowedError("Jwt token does not match for request");
-    return token.jwt;
+    console.log("jwt", jwt);
+    console.log("token", token.token);
+    if (token.token.trim() != jwt.trim()) throw new NotAllowedError("Jwt token does not match for request");
+    return token;
   }
 
   private generateJWT(userId: string, username: string) {

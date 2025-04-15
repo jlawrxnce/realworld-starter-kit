@@ -1,5 +1,3 @@
-import { ObjectId } from "mongodb";
-
 export type UserRequest = {
   email: string;
   username: string;
@@ -13,6 +11,7 @@ export type ArticleRequest = {
   description: string;
   body: string;
   tagList?: Array<string>;
+  isPremium?: boolean;
 };
 
 export type CommentRequest = {
@@ -45,6 +44,8 @@ export type ArticleResponse = {
   favorited: boolean;
   favoritesCount: number;
   author: ProfileResponse;
+  isPremium: boolean;
+  preview?: string;
 };
 
 export type ArticlesResponse = {
@@ -53,7 +54,7 @@ export type ArticlesResponse = {
 };
 
 export type CommentResponse = {
-  id: ObjectId;
+  id: number;
   createdAt: string;
   updatedAt: string;
   body: string;

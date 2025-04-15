@@ -6,8 +6,8 @@ import ArticleConcept from "./concepts/article";
 import CommentConcept from "./concepts/comment";
 import FavoriteConcept from "./concepts/favorite";
 import TagConcept from "./concepts/tags";
-import MergeConcept from "./concepts/built-in/merge";
-import MapperConcept from "./concepts/built-in/mapper";
+import { MergeConcept } from "./concepts/operational/merge";
+import MapperConcept from "./concepts/operational/mapper";
 import JwtConcept from "./concepts/jwt";
 
 // App Definition using concepts

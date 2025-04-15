@@ -3,7 +3,7 @@ import { WebSessionDoc } from "./concepts/websession";
 import { Router, getExpressRouter } from "./framework/router";
 import { ObjectId } from "mongodb";
 import { NotAllowedError, NotFoundError } from "./concepts/errors";
-import { ArticleRequest, CommentRequest, UserRequest } from "types/types";
+import { ArticleRequest, CommentRequest, CommentResponse, UserRequest, UserResponse } from "types/types";
 
 const EMPTY_MESSAGE = (key: string) => {
   return { [key]: {} };
@@ -25,8 +25,10 @@ const EMPTY_ARTICLE = (favorited: boolean = true) => {
     },
   };
 };
+const EMPTY_PROFILE = { profile: { username: "", bio: "", image: "", following: false } };
+const EMPTY_USER = { user: { username: "", bio: "", image: "", email: "", token: "" } };
+const EMPTY_COMMENT = { comment: { id: 0, body: "", createdAt: new Date("01").toISOString(), updatedAt: new Date("01").toISOString(), author: EMPTY_PROFILE.profile } };
 
-const EMPTY_COMMENT = { comment: { id: 0, body: "", createdAt: new Date("01").toISOString(), updatedAt: new Date("01").toISOString(), author: "" } };
 class Routes {
   @Router.get("/session")
   async getSessionUser(session: WebSessionDoc) {
@@ -42,7 +44,7 @@ class Routes {
     await Follower.create(account._id, account._id);
     WebSession.start(session, account._id);
 
-    return { user: Merge.createUserResponse(account, profile, jwt) };
+    return Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, jwt);
   }
 
   @Router.post("/users/login")
@@ -52,7 +54,8 @@ class Routes {
     const profile = await Profile.getProfileById(_id);
     const jwt = await Jwt.update(account._id, account.username);
     WebSession.start(session, _id);
-    return { user: Merge.createUserResponse(account, profile, jwt) };
+    console.log("does my token get returned", Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, jwt));
+    return Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, jwt);
   }
 
   @Router.get("/user")
@@ -62,7 +65,7 @@ class Routes {
       const jwt = await Jwt.authenticate(userId, auth);
       const account = await Account.getAccountById(userId);
       const profile = await Profile.getProfileById(userId);
-      return { user: Merge.createUserResponse(await account, await profile, await jwt) };
+      return Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, jwt);
     } catch (e) {
       return EMPTY_MESSAGE("user");
     }
@@ -75,7 +78,7 @@ class Routes {
       const jwt = await Jwt.authenticate(userId, auth);
       const account = Account.update(userId, { ...user });
       const profile = Profile.update(userId, { ...user });
-      return { user: Merge.createUserResponse(await account, await profile, await jwt) };
+      return Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, jwt);
     } catch (e) {
       return EMPTY_MESSAGE("user");
     }
@@ -86,7 +89,7 @@ class Routes {
     const user = WebSession.getUser(session);
     const profile = await Profile.getProfileByUsername(username);
     const following = await Follower.isFollowing(user, profile._id);
-    return { profile: Merge.createProfileResponse(profile, following) };
+    return Merge.createTransformedResponse("profile", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
   }
 
   @Router.post("/profiles/:username/follow")
@@ -96,7 +99,7 @@ class Routes {
       await Jwt.authenticate(userId, auth);
       const profile = await Profile.getProfileByUsername(username);
       await Follower.create(userId, profile._id);
-      return { profile: Merge.createProfileResponse(profile, true) };
+      return Merge.createTransformedResponse("profile", (merged) => ({ ...merged, following: true }), EMPTY_PROFILE.profile, profile);
     } catch (e) {
       return { profile: { username: "", bio: "", image: "", following: true } };
     }
@@ -109,7 +112,7 @@ class Routes {
       await Jwt.authenticate(userId, auth);
       const profile = await Profile.getProfileByUsername(username);
       await Follower.delete(userId, profile._id);
-      return { profile: Merge.createProfileResponse(profile, false) };
+      return Merge.createTransformedResponse("profile", (merged) => ({ ...merged, following: false }), profile);
     } catch (e) {
       if (e instanceof NotAllowedError) return EMPTY_MESSAGE("profile");
       return { profile: { username: "", bio: "", image: "", following: false } };
@@ -125,16 +128,20 @@ class Routes {
       const newArticle = await Article.create(userId, article.title, article.description, article.body);
       await Tag.create(newArticle._id, article.tagList ?? []);
 
-      const profileMessage = Merge.createProfileResponse(profile, true);
-
-      return { article: Merge.createArticleResponse(newArticle, profileMessage, article.tagList ?? [], false, 0) };
+      const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following: true }), EMPTY_PROFILE.profile, profile);
+      return Merge.createTransformedResponse(
+        "article",
+        (merged) => ({ ...merged, tagList: article.tagList ?? [], favorited: false, favorites: 0 }),
+        EMPTY_ARTICLE(false).article,
+        newArticle,
+        profileMessage,
+      );
     } catch (e) {
       if (e instanceof NotAllowedError) return EMPTY_MESSAGE("article");
       return EMPTY_ARTICLE;
     }
   }
 
-  @Router.put("/articles")
   @Router.put("/articles/:slug")
   async updateArticle(session: WebSessionDoc, slug: string, article: ArticleRequest, auth: string) {
     try {
@@ -146,9 +153,14 @@ class Routes {
       const newArticle = await Article.update(oldArticle._id, { title: article.title, description: article.description, body: article.body });
       await Tag.update(oldArticle._id, article.tagList ?? []);
 
-      const profileMessage = Merge.createProfileResponse(profile, true);
-
-      return { article: Merge.createArticleResponse(newArticle, profileMessage, article.tagList ?? [], false, 0) };
+      const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following: true }), EMPTY_PROFILE.profile, profile);
+      return Merge.createTransformedResponse(
+        "article",
+        (merged) => ({ ...merged, tagList: article.tagList ?? [], favorited: false, favorites: 0 }),
+        EMPTY_ARTICLE(false).article,
+        newArticle,
+        profileMessage,
+      );
     } catch (e) {
       return EMPTY_ARTICLE;
     }
@@ -187,13 +199,17 @@ class Routes {
       articles.map(async (article) => {
         const profile = await Profile.getProfileById(article.author);
         const following = await Follower.isFollowing(userId, profile._id);
-        const profileMessage = Merge.createProfileResponse(profile, following);
         const favoritesCount = await Favorite.countTargetFavorites(article._id);
         const favorited = await Favorite.isFavoritedByUser(userId, article._id);
         const tagList = await Tag.getTagByTarget(article._id).then(Tag.stringify);
-        return Merge.createArticleResponse(article, profileMessage, tagList, favorited, favoritesCount);
+
+        const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
+        return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited, favoritesCount }), EMPTY_ARTICLE(false).article, article, profileMessage);
       }),
     );
+    for (const a of articleMessages) {
+      console.log("articleMessages", a, a.article.author);
+    }
     return { articles: articleMessages, articlesCount: articleMessages.length };
   }
 
@@ -213,11 +229,12 @@ class Routes {
         articles.map(async (article) => {
           const profile = await Profile.getProfileById(article.author);
           const following = true; // The user is following the author by definition
-          const profileMessage = Merge.createProfileResponse(profile, following);
           const favoritesCount = await Favorite.countTargetFavorites(article._id);
           const favorited = await Favorite.isFavoritedByUser(userId, article._id);
           const tagList = await Tag.getTagByTarget(article._id).then(Tag.stringify);
-          return Merge.createArticleResponse(article, profileMessage, tagList, favorited, favoritesCount);
+
+          const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
+          return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited, favoritesCount }), EMPTY_ARTICLE(false).article, article, profileMessage);
         }),
       );
       return { articles: articleMessages, articlesCount: articleMessages.length };
@@ -232,11 +249,12 @@ class Routes {
     try {
       const article = await Article.getBySlugOrThrow(slug);
       const profile = await Profile.getProfileById(article?.author);
-      const profileMessage = Merge.createProfileResponse(profile, true);
       const tagList = await Tag.stringify(await Tag.getTagByTarget(article._id));
       const favorited = await Favorite.isFavoritedByUser(userId, article._id);
-      const favoriteCount = await Favorite.countTargetFavorites(article._id);
-      return { article: Merge.createArticleResponse(article, profileMessage, tagList, favorited, favoriteCount) };
+      const favoritesCount = await Favorite.countTargetFavorites(article._id);
+
+      const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following: true }), EMPTY_PROFILE.profile, profile);
+      return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited, favoritesCount }), EMPTY_ARTICLE(false).article, article, profileMessage);
     } catch (e) {
       if (e instanceof NotFoundError) return EMPTY_ARTICLE;
     }
@@ -253,7 +271,6 @@ class Routes {
     await Tag.deleteByTarget(article._id);
   }
 
-  // @Router.post("/articles//comments")
   @Router.post("/articles/:slug/comments")
   async addComment(session: WebSessionDoc, comment: CommentRequest, slug: string) {
     try {
@@ -261,8 +278,10 @@ class Routes {
       const article = await Article.getBySlugOrThrow(slug);
       const newComment = await Comment.create(userId, article?._id, comment.body);
       const profile = await Profile.getProfileById(userId);
-      const profileMessage = Merge.createProfileResponse(profile, true);
-      return { comment: Merge.createCommentResponse(newComment, profileMessage) };
+
+      const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following: true }), EMPTY_PROFILE.profile, profile);
+      console.log("testing comment", Merge.createResponse<CommentResponse>("comment", EMPTY_COMMENT.comment, newComment, profileMessage));
+      return { comment: Merge.createResponse<CommentResponse>("comment", EMPTY_COMMENT.comment, newComment, profileMessage) };
     } catch (e) {
       return EMPTY_COMMENT;
     }
@@ -278,8 +297,8 @@ class Routes {
         comments.map(async (comment) => {
           const profile = await Profile.getProfileById(comment.author);
           const following = await Follower.isFollowing(userId, profile._id);
-          const profileMessage = Merge.createProfileResponse(profile, following);
-          return Merge.createCommentResponse(comment, profileMessage);
+          const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), profile);
+          return { comment: Merge.createResponse<CommentResponse>("comment", EMPTY_COMMENT.comment, comment, profileMessage) };
         }),
       );
 
@@ -305,11 +324,11 @@ class Routes {
       const article = await Article.getBySlugOrThrow(slug);
       const profile = await Profile.getProfileById(article.author);
       const following = await Follower.isFollowing(userId, profile._id);
-      const profileMessage = Merge.createProfileResponse(profile, following);
       await Favorite.create(userId, article?._id);
       const favoritesCount = await Favorite.countTargetFavorites(article._id);
       const tagList = Tag.stringify(await Tag.getTagByTarget(article._id));
-      return { article: Merge.createArticleResponse(article, profileMessage, tagList, true, favoritesCount) };
+      const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
+      return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited: true, favoritesCount }), EMPTY_ARTICLE(false).article, article, profileMessage);
     } catch (e) {
       if (e instanceof NotAllowedError) return EMPTY_MESSAGE("article");
       return EMPTY_ARTICLE(true);
@@ -325,11 +344,12 @@ class Routes {
       const article = await Article.getBySlugOrThrow(slug);
       const profile = await Profile.getProfileById(article.author);
       const following = await Follower.isFollowing(userId, profile._id);
-      const profileMessage = Merge.createProfileResponse(profile, following);
       await Favorite.delete(userId, article?._id);
       const favoritesCount = await Favorite.countTargetFavorites(article._id);
       const tagList = Tag.stringify(await Tag.getTagByTarget(article._id));
-      return { article: Merge.createArticleResponse(article, profileMessage, tagList, false, favoritesCount) };
+
+      const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
+      return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited: false, favoritesCount }), EMPTY_ARTICLE(false).article, article, profileMessage);
     } catch (e) {
       if (e instanceof NotAllowedError) return EMPTY_MESSAGE("article");
       return EMPTY_ARTICLE(false);
