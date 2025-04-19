@@ -54,7 +54,6 @@ class Routes {
     const profile = await Profile.getProfileById(_id);
     const jwt = await Jwt.update(account._id, account.username);
     WebSession.start(session, _id);
-    console.log("does my token get returned", Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, jwt));
     return Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, jwt);
   }
 
@@ -207,9 +206,6 @@ class Routes {
         return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited, favoritesCount }), EMPTY_ARTICLE(false).article, article, profileMessage);
       }),
     );
-    for (const a of articleMessages) {
-      console.log("articleMessages", a, a.article.author);
-    }
     return { articles: articleMessages, articlesCount: articleMessages.length };
   }
 
@@ -280,7 +276,7 @@ class Routes {
       const profile = await Profile.getProfileById(userId);
 
       const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following: true }), EMPTY_PROFILE.profile, profile);
-      console.log("testing comment", Merge.createResponse<CommentResponse>("comment", EMPTY_COMMENT.comment, newComment, profileMessage));
+      console.log("testing add comment", Merge.createResponse<CommentResponse>("comment", EMPTY_COMMENT.comment, newComment, profileMessage));
       return { comment: Merge.createResponse<CommentResponse>("comment", EMPTY_COMMENT.comment, newComment, profileMessage) };
     } catch (e) {
       return EMPTY_COMMENT;
@@ -297,11 +293,11 @@ class Routes {
         comments.map(async (comment) => {
           const profile = await Profile.getProfileById(comment.author);
           const following = await Follower.isFollowing(userId, profile._id);
-          const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), profile);
+          const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
           return { comment: Merge.createResponse<CommentResponse>("comment", EMPTY_COMMENT.comment, comment, profileMessage) };
         }),
       );
-
+      console.log("testing get comments", commentMessages);
       return { comments: commentMessages };
     } catch (e) {
       return { comments: [] };

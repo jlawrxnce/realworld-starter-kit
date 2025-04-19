@@ -44,8 +44,6 @@ export type ArticleResponse = {
   favorited: boolean;
   favoritesCount: number;
   author: ProfileResponse;
-  isPremium: boolean;
-  preview?: string;
 };
 
 export type ArticlesResponse = {
