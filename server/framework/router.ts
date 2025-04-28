@@ -98,12 +98,16 @@ export class Router {
   private makeRoute(f: Function, validator?: ZodSchema) {
     const argNames = getParamNames(f);
     return async (req: Request, res: Response) => {
+      console.log("req", req);
       const reqMap = (name: string) => {
         if (name === "session" || name == "param" || name == "query" || name == "body") {
           return req[name];
         }
         if (name === "auth") {
           return req.headers["authorization"];
+        }
+        if (name === "user") {
+          return req.body.user;
         }
         const ret = req.params[name] || req.query[name] || req.body[name];
 

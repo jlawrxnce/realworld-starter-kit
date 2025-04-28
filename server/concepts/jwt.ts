@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 
-import DocCollection, { BaseDoc } from "../framework/doc";
-import { NotAllowedError, NotFoundError } from "./errors";
+import { BaseDoc } from "../framework/doc";
+import { NotAllowedError } from "./errors";
 import jwt from "jsonwebtoken";
 
 export interface JwtDoc extends BaseDoc {
@@ -9,45 +9,37 @@ export interface JwtDoc extends BaseDoc {
 }
 
 export default class JwtConcept {
-  public readonly jwts: DocCollection<JwtDoc>;
+  private secret = "abc";
 
-  constructor(name: string) {
-    this.jwts = new DocCollection<JwtDoc>(name);
-  }
+  constructor() {}
 
   async create(_id: ObjectId, username: string) {
     // JWT
     const jwt = this.generateJWT(_id.toString(), username);
-    const token = await this.jwts.createOne({ _id, token: jwt }, false);
-
-    if (!token) throw new NotFoundError("Jwt not created");
-    return token;
+    return jwt;
   }
 
   async update(_id: ObjectId, username: string) {
     // JWT
     const jwt = this.generateJWT(_id.toString(), username);
-    await this.jwts.partialUpdateOne({ _id }, { token: jwt });
-    const token = await this.jwts.readOne({ token: jwt });
-    console.log('token", token');
-    if (!token) throw new NotFoundError("Jwt not created");
-    return token;
+    return jwt;
   }
 
-  async authenticate(_id: ObjectId, jwt: string) {
-    const token = await this.jwts.readOne({ _id });
-    if (!token) throw new NotFoundError("No jwt exists for user: " + _id.toString());
-    // Replace standard bearer string
-    jwt = jwt.replace("Token ", "");
-    jwt = jwt.replace("Bearer ", "");
-    console.log("jwt", jwt);
-    console.log("token", token.token);
-    if (token.token.trim() != jwt.trim()) throw new NotAllowedError("Jwt token does not match for request");
-    return token;
+  async authenticate(user_jwt: string) {
+    user_jwt = user_jwt.replace("Token ", "");
+    try {
+      // Verify will throw if signature is invalid or token is expired
+      const decoded = jwt.verify(user_jwt, this.secret) as jwt.JwtPayload;
+      return new ObjectId(decoded.userId);
+    } catch (error) {
+      if (error instanceof jwt.JsonWebTokenError) {
+        throw new NotAllowedError("Invalid token: " + error.message);
+      }
+      throw error;
+    }
   }
 
   private generateJWT(userId: string, username: string) {
-    const secretKey = "abc";
-    return jwt.sign({ userId, username }, secretKey, { expiresIn: "1h" });
+    return jwt.sign({ userId, username }, this.secret, { expiresIn: "1h" });
   }
 }

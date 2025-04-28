@@ -13,6 +13,13 @@ export class MergeConcept {
     return { [key]: filtered } as { [K in typeof key]: T };
   }
 
+  mergeTransformedObject<T extends MergeableObject, R>(transform: (merged: T) => R, filter: T, ...objects: Array<MergeableObject>): R {
+    const merged = Object.assign({}, ...objects) as T;
+    const filtered = this.filterToType<T>(merged, filter);
+    const transformed = transform(filtered);
+    return transformed;
+  }
+
   /**
    * Filter an object to only include fields that match the target type
    * @param obj Object to filter

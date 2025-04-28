@@ -35,10 +35,8 @@ export default class TagConcept {
   }
 
   async getTags(query: Filter<TagDoc>) {
-    const tags = await this.tags.readMany(query, {
-      sort: { dateUpdated: -1 },
-    });
-    return tags;
+    const tags = await this.tags.readMany(query);
+    return tags.reverse();
   }
 
   async getTagByTarget(target: ObjectId) {
