@@ -3,26 +3,21 @@ import { Router, getExpressRouter } from "./framework/router";
 import { ObjectId } from "mongodb";
 import { ArticleRequest, CommentRequest, UserRequest, UserResponse } from "types/types";
 
-const EMPTY_MESSAGE = (key: string) => {
-  return { [key]: {} };
+const EMPTY_ARTICLE = {
+  article: {
+    slug: "",
+    title: "",
+    description: "",
+    body: "",
+    tagList: [],
+    createdAt: new Date("0").toISOString(),
+    updatedAt: new Date("0").toISOString(),
+    favorited: false,
+    favoritesCount: 0,
+    author: { username: "", bio: "", image: "", following: "" },
+  },
 };
 
-const EMPTY_ARTICLE = (favorited: boolean = true) => {
-  return {
-    article: {
-      slug: "",
-      title: "",
-      description: "",
-      body: "",
-      tagList: [],
-      createdAt: new Date("0").toISOString(),
-      updatedAt: new Date("0").toISOString(),
-      favorited: favorited,
-      favoritesCount: favorited ? 1 : 0,
-      author: { username: "", bio: "", image: "", following: "" },
-    },
-  };
-};
 const EMPTY_PROFILE = { profile: { username: "", bio: "", image: "", following: false } };
 const EMPTY_USER = { user: { username: "", bio: "", image: "", email: "", token: "" } };
 const EMPTY_COMMENT = { comment: { id: 0, body: "", createdAt: new Date("01").toISOString(), updatedAt: new Date("01").toISOString(), author: EMPTY_PROFILE.profile } };
@@ -104,7 +99,7 @@ class Routes {
     return Merge.createTransformedResponse(
       "article",
       (merged) => ({ ...merged, tagList: article.tagList ?? [], favorited: false, favoritesCount: 0 }),
-      EMPTY_ARTICLE(false).article,
+      EMPTY_ARTICLE.article,
       newArticle,
       profileMessage,
     );
@@ -121,13 +116,7 @@ class Routes {
     await Tag.update(oldArticle._id, article.tagList ?? []);
 
     const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following: true, favoritesCount: favoritesCount }), EMPTY_PROFILE.profile, profile);
-    return Merge.createTransformedResponse(
-      "article",
-      (merged) => ({ ...merged, tagList: article.tagList ?? [], favorited: false, favoritesCount }),
-      EMPTY_ARTICLE(false).article,
-      newArticle,
-      profileMessage,
-    );
+    return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList: article.tagList ?? [], favorited: false, favoritesCount }), EMPTY_ARTICLE.article, newArticle, profileMessage);
   }
 
   @Router.get("/articles")
@@ -182,7 +171,7 @@ class Routes {
         const tagList = await Tag.getTagByTarget(article._id).then(Tag.stringify);
 
         const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
-        return Merge.mergeTransformedObject((merged) => ({ ...merged, tagList, favorited, favoritesCount }), EMPTY_ARTICLE(false).article, article, profileMessage);
+        return Merge.mergeTransformedObject((merged) => ({ ...merged, tagList, favorited, favoritesCount }), EMPTY_ARTICLE.article, article, profileMessage);
       }),
     );
     return { articles: articleMessages, articlesCount: articleMessages.length };
@@ -207,7 +196,7 @@ class Routes {
         const tagList = await Tag.getTagByTarget(article._id).then(Tag.stringify);
 
         const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
-        return Merge.mergeTransformedObject((merged) => ({ ...merged, tagList, favorited, favoritesCount }), EMPTY_ARTICLE(false).article, article, profileMessage);
+        return Merge.mergeTransformedObject((merged) => ({ ...merged, tagList, favorited, favoritesCount }), EMPTY_ARTICLE.article, article, profileMessage);
       }),
     );
     return { articles: articleMessages, articlesCount: articleMessages.length };
@@ -222,7 +211,7 @@ class Routes {
     const favoritesCount = await Favorite.countTargetFavorites(article._id);
 
     const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following: true }), EMPTY_PROFILE.profile, profile);
-    return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited, favoritesCount }), EMPTY_ARTICLE(false).article, article, profileMessage);
+    return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited, favoritesCount }), EMPTY_ARTICLE.article, article, profileMessage);
   }
 
   @Router.delete("/articles/:slug")
@@ -286,7 +275,7 @@ class Routes {
     const favoritesCount = await Favorite.countTargetFavorites(article._id);
     const tagList = Tag.stringify(await Tag.getTagByTarget(article._id));
     const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
-    return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited: true, favoritesCount }), EMPTY_ARTICLE(false).article, article, profileMessage);
+    return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited: true, favoritesCount }), EMPTY_ARTICLE.article, article, profileMessage);
   }
 
   @Router.delete("/articles/:slug/favorite")
@@ -301,7 +290,7 @@ class Routes {
     const tagList = Tag.stringify(await Tag.getTagByTarget(article._id));
 
     const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
-    return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited: false, favoritesCount }), EMPTY_ARTICLE(false).article, article, profileMessage);
+    return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited: false, favoritesCount }), EMPTY_ARTICLE.article, article, profileMessage);
   }
 
   @Router.get("/tags")
