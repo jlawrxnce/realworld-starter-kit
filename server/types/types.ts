@@ -73,6 +73,11 @@ export enum Tier {
   Gold = "Gold",
 }
 
+export type MembershipRequest = {
+  tier: Tier;
+  autoRenew: boolean;
+};
+
 export type MembershipResponse = {
   username: string;
   tier: Tier;

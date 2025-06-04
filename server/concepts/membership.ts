@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
-import { BadValuesError, NotFoundError } from "./errors";
+import { BadValuesError } from "./errors";
 
 export enum Tier {
   Free = "Free",
@@ -31,7 +31,7 @@ export default class MembershipConcept {
     }
     const renewalDate = new Date();
     renewalDate.setMonth(renewalDate.getMonth() + 1);
-    const _id = await this.memberships.createOne({ owner, tier, renewalDate, autoRenew: true });
+    const _id = await this.memberships.createOne({ owner, tier, renewalDate, autoRenew: false });
     return await this.memberships.readOne({ _id });
   }
 
@@ -45,16 +45,16 @@ export default class MembershipConcept {
     return membership;
   }
 
-  async update(owner: ObjectId, tier: Tier, autoRenew: boolean) {
+  async update(owner: ObjectId, updates: Partial<MembershipDoc>) {
     const membership = await this.memberships.readOne({ owner });
     if (!membership) {
-      throw new NotFoundError("No membership found to update");
+      return null;
     }
     const renewalDate = new Date(membership.renewalDate);
-    if (tier !== membership.tier) {
+    if (updates.tier !== undefined && updates.tier !== membership.tier) {
       renewalDate.setMonth(renewalDate.getMonth() + 1);
     }
-    await this.memberships.partialUpdateOne({ owner }, { tier, autoRenew, renewalDate });
+    await this.memberships.partialUpdateOne({ owner }, { ...updates, renewalDate });
     return await this.memberships.readOne({ owner });
   }
 

@@ -1,7 +1,8 @@
-import { Account, Article, Comment, Favorite, Follower, Jwt, Map, Merge, Profile, Tag, Membership, Paywall } from "./app";
+import { Account, Article, Comment, Favorite, Follower, Jwt, Merge, Profile, Tag, Membership, Paywall } from "./app";
 import { Router, getExpressRouter } from "./framework/router";
 import { ObjectId } from "mongodb";
-import { ArticleRequest, CommentRequest, UserRequest, UserResponse, Tier, MembershipResponse } from "types/types";
+import { ArticleRequest, CommentRequest, UserRequest, UserResponse, Tier, MembershipRequest } from "./types/types";
+import { NotAllowedError } from "./concepts/errors";
 
 const EMPTY_ARTICLE = {
   article: {
@@ -22,6 +23,14 @@ const EMPTY_ARTICLE = {
 const EMPTY_PROFILE = { profile: { username: "", bio: "", image: "", following: false } };
 const EMPTY_USER = { user: { username: "", bio: "", image: "", email: "", token: "" } };
 const EMPTY_COMMENT = { comment: { id: 0, body: "", createdAt: new Date("01").toISOString(), updatedAt: new Date("01").toISOString(), author: EMPTY_PROFILE.profile } };
+const EMPTY_MEMBBERSHIP = {
+  membership: {
+    username: "",
+    tier: Tier.Free,
+    renewalDate: new Date("01").toISOString(),
+    autoRenew: false,
+  },
+};
 
 class Routes {
   @Router.post("/users")
@@ -29,7 +38,6 @@ class Routes {
     const account = await Account.create(user.username, user.password, user.email);
     const profile = await Profile.create(account._id, user.username, user.bio, user.image);
     const jwt = await Jwt.create(account._id, account.username);
-    await Follower.create(account._id, account._id);
     return Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, { token: jwt });
   }
 
@@ -93,13 +101,14 @@ class Routes {
   async createArticle(article: ArticleRequest, auth: string) {
     const userId = await Jwt.authenticate(auth);
     const profile = await Profile.getProfileById(userId);
+    console.log("user id when making article", userId);
     const newArticle = await Article.create(userId, article.title, article.description, article.body);
     await Tag.create(newArticle._id, article.tagList ?? []);
 
     const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following: true, favoritesCount: 0 }), EMPTY_PROFILE.profile, profile);
     return Merge.createTransformedResponse(
       "article",
-      (merged) => ({ ...merged, tagList: article.tagList ?? [], favorited: false, favoritesCount: 0 }),
+      (merged) => ({ ...merged, tagList: article.tagList ?? [], favorited: false, favoritesCount: 0, hasPaywall: false }),
       EMPTY_ARTICLE.article,
       newArticle,
       profileMessage,
@@ -181,10 +190,8 @@ class Routes {
   @Router.get("/articles/feed")
   async getFeedArticles(limit: number, offset: number, auth: string) {
     const userId = await Jwt.authenticate(auth);
-
     // Get list of followed author IDs
-    const followIds = await Follower.getFollowers(userId).then(Map.mapObjectIds);
-
+    const followIds = await Follower.getFollowers({ userId }).then((followers) => followers.map((follower) => follower.target));
     // Retrieve articles by followed authors, sorted by most recent first, with pagination
     const articles = await Article.getByAuthors(followIds, limit, offset);
     // Map articles to the desired message format
@@ -195,9 +202,10 @@ class Routes {
         const favoritesCount = await Favorite.countTargetFavorites(article._id);
         const favorited = await Favorite.isFavoritedByUser(userId, article._id);
         const tagList = await Tag.getTagByTarget(article._id).then(Tag.stringify);
+        const hasPaywall = await Paywall.isPaywalled(article._id);
 
         const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
-        return Merge.mergeTransformedObject((merged) => ({ ...merged, tagList, favorited, favoritesCount }), EMPTY_ARTICLE.article, article, profileMessage);
+        return Merge.mergeTransformedObject((merged) => ({ ...merged, tagList, favorited, favoritesCount, hasPaywall }), EMPTY_ARTICLE.article, article, profileMessage);
       }),
     );
     return { articles: articleMessages, articlesCount: articleMessages.length };
@@ -219,11 +227,11 @@ class Routes {
 
     if (hasPaywall) {
       if (!userId) {
-        throw new Error("Authentication required for paywalled content");
+        throw new NotAllowedError("Authentication required for paywalled content");
       }
       const hasMembership = await Membership.verifyGoldAccess(userId);
       if (!hasMembership) {
-        throw new Error("Gold membership required for paywalled content");
+        throw new NotAllowedError("Gold membership required for paywalled content");
       }
     }
 
@@ -251,6 +259,16 @@ class Routes {
   async addComment(comment: CommentRequest, slug: string, auth: string) {
     const userId = await Jwt.authenticate(auth);
     const article = await Article.getBySlugOrThrow(slug);
+
+    // Add paywall check
+    const hasPaywall = await Paywall.isPaywalled(article._id);
+    if (hasPaywall) {
+      const hasMembership = await Membership.verifyGoldAccess(userId);
+      if (!hasMembership) {
+        throw new NotAllowedError("Gold membership required for paywalled content");
+      }
+    }
+
     const newComment = await Comment.create(userId, article?._id, comment.body);
     const profile = await Profile.getProfileById(userId);
 
@@ -269,6 +287,19 @@ class Routes {
       }
     }
     const article = await Article.getBySlugOrThrow(slug);
+
+    // Add paywall check
+    const hasPaywall = await Paywall.isPaywalled(article._id);
+    if (hasPaywall) {
+      if (!userId) {
+        throw new NotAllowedError("Authentication required for paywalled content");
+      }
+      const hasMembership = await Membership.verifyGoldAccess(userId);
+      if (!hasMembership) {
+        throw new NotAllowedError("Gold membership required for paywalled content");
+      }
+    }
+
     const comments = await Comment.getCommentsByTarget(article._id);
     const commentMessages = await Promise.all(
       comments.map(async (comment) => {
@@ -284,28 +315,59 @@ class Routes {
   // TOOD: I don't think this works
   @Router.delete("/articles/:slug/comments/:id")
   async deleteComment(auth: string, slug: string, id: string) {
-    await Jwt.authenticate(auth);
+    const userId = await Jwt.authenticate(auth);
+    const article = await Article.getBySlugOrThrow(slug);
+
+    // Add paywall check
+    const hasPaywall = await Paywall.isPaywalled(article._id);
+    if (hasPaywall) {
+      const hasMembership = await Membership.verifyGoldAccess(userId);
+      if (!hasMembership) {
+        throw new Error("Gold membership required for paywalled content");
+      }
+    }
+
     await Comment.delete(new ObjectId(id));
   }
 
   @Router.post("/articles/:slug/favorite")
-  async favoriteArticle(auth: string, slug: string) {
+  async favoriteArticle(slug: string, auth: string) {
     const userId = await Jwt.authenticate(auth);
     const article = await Article.getBySlugOrThrow(slug);
+
+    // Add paywall check
+    const hasPaywall = await Paywall.isPaywalled(article._id);
+    if (hasPaywall) {
+      const hasMembership = await Membership.verifyGoldAccess(userId);
+      if (!hasMembership) {
+        throw new NotAllowedError("Gold membership required for paywalled content");
+      }
+    }
+
+    await Favorite.create(userId, article._id);
     const profile = await Profile.getProfileById(article.author);
-    const following = await Follower.isFollowing(userId, profile._id);
-    await Favorite.create(userId, article?._id);
+    const tagList = await Tag.stringify(await Tag.getTagByTarget(article._id));
+    const favorited = true;
     const favoritesCount = await Favorite.countTargetFavorites(article._id);
-    const tagList = Tag.stringify(await Tag.getTagByTarget(article._id));
+    const following = await Follower.isFollowing(userId, profile._id);
+
     const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
-    return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited: true, favoritesCount }), EMPTY_ARTICLE.article, article, profileMessage);
+    return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited, favoritesCount, hasPaywall }), EMPTY_ARTICLE.article, article, profileMessage);
   }
 
   @Router.delete("/articles/:slug/favorite")
-  async unfavoriteArticle(auth: string, slug: string) {
+  async unfavoriteArticle(slug: string, auth: string) {
     const userId = await Jwt.authenticate(auth);
 
     const article = await Article.getBySlugOrThrow(slug);
+    const hasPaywall = await Paywall.isPaywalled(article._id);
+    if (hasPaywall) {
+      const hasMembership = await Membership.verifyGoldAccess(userId);
+      if (!hasMembership) {
+        throw new NotAllowedError("Gold membership required for paywalled content");
+      }
+    }
+
     const profile = await Profile.getProfileById(article.author);
     const following = await Follower.isFollowing(userId, profile._id);
     await Favorite.delete(userId, article?._id);
@@ -322,61 +384,47 @@ class Routes {
   }
 
   @Router.post("/membership")
-  async activateMembership(tier: Tier, auth: string): Promise<MembershipResponse> {
+  async activateMembership(membership: MembershipRequest, auth: string) {
     const userId = await Jwt.authenticate(auth);
-    if (tier === Tier.Free) {
-      throw new Error("Cannot activate Free tier membership");
+    if (membership.tier === Tier.Free) {
+      throw new NotAllowedError("Cannot activate Free tier membership");
     }
-    const membership = await Membership.create(userId, tier);
-    if (!membership) throw new Error("Failed to create membership");
+    const newMembership = await Membership.create(userId, membership.tier);
+    if (!newMembership) throw new Error("Failed to create membership");
     const profile = await Profile.getProfileById(userId);
-    return {
-      username: profile.username,
-      tier: membership.tier,
-      renewalDate: membership.renewalDate.toISOString(),
-      autoRenew: membership.autoRenew,
-    };
+    return Merge.createTransformedResponse("membership", (merged) => ({ ...merged, username: profile.username }), EMPTY_MEMBBERSHIP.membership, newMembership);
   }
 
   @Router.put("/membership")
-  async updateMembership(tier: Tier, autoRenew: boolean, auth: string): Promise<MembershipResponse> {
+  async updateMembership(membership: MembershipRequest, auth: string) {
     const userId = await Jwt.authenticate(auth);
-    const membership = await Membership.update(userId, tier, autoRenew);
-    if (!membership) throw new Error("Failed to update membership");
+    const updatedMembership = await Membership.update(userId, membership);
+    if (!updatedMembership) throw new NotAllowedError("Failed to update membership");
     const profile = await Profile.getProfileById(userId);
-    return {
-      username: profile.username,
-      tier: membership.tier,
-      renewalDate: membership.renewalDate.toISOString(),
-      autoRenew: membership.autoRenew,
-    };
+    return Merge.createTransformedResponse("membership", (merged) => ({ ...merged, username: profile.username }), EMPTY_MEMBBERSHIP.membership, updatedMembership);
   }
 
   @Router.get("/membership")
-  async getMembership(auth: string): Promise<MembershipResponse> {
+  async getMembership(auth: string) {
     const userId = await Jwt.authenticate(auth);
     const membership = await Membership.getMembership(userId);
     if (!membership) throw new Error("Failed to get membership");
     const profile = await Profile.getProfileById(userId);
-    return {
-      username: profile.username,
-      tier: membership.tier,
-      renewalDate: membership.renewalDate.toISOString(),
-      autoRenew: membership.autoRenew,
-    };
+    return Merge.createTransformedResponse("membership", (merged) => ({ ...merged, username: profile.username }), EMPTY_MEMBBERSHIP.membership, membership);
   }
 
   @Router.put("/articles/:slug/paywall")
   async togglePaywall(slug: string, auth: string) {
     const userId = await Jwt.authenticate(auth);
     const article = await Article.getBySlugOrThrow(slug);
+
     if (article.author.toString() !== userId.toString()) {
-      throw new Error("Only the article author can toggle paywall");
+      throw new NotAllowedError("Only the article author can toggle paywall");
     }
 
     const hasMembership = await Membership.verifyGoldAccess(userId);
     if (!hasMembership) {
-      throw new Error("Gold membership required to add paywall");
+      throw new NotAllowedError("Gold membership required to add paywall");
     }
 
     const paywall = await Paywall.toggle(article._id);
