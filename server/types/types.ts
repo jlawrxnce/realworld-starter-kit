@@ -43,7 +43,6 @@ export type ArticleResponse = {
   updatedAt: string;
   favorited: boolean;
   favoritesCount: number;
-  hasPaywall: boolean;
   author: ProfileResponse;
 };
 
@@ -66,21 +65,4 @@ export type CommentsResponse = {
 
 export type TagsResponse = {
   tags: Array<String>;
-};
-
-export enum Tier {
-  Free = "Free",
-  Gold = "Gold",
-}
-
-export type MembershipRequest = {
-  tier: Tier;
-  autoRenew: boolean;
-};
-
-export type MembershipResponse = {
-  username: string;
-  tier: Tier;
-  renewalDate: string;
-  autoRenew: boolean;
 };

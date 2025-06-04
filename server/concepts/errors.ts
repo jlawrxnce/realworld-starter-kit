@@ -5,7 +5,7 @@ import { FormattableError } from "../framework/router";
  * If this action was a HTTP request, status code for this error would be 400 Bad Request.
  */
 export class BadValuesError extends FormattableError {
-  public readonly HTTP_CODE = 403;
+  public readonly HTTP_CODE = 400;
 }
 
 /**
