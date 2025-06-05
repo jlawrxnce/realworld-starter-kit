@@ -9,6 +9,7 @@ export interface ArticleDoc extends BaseDoc {
   title: string;
   description: string;
   body: string;
+  hasPaywall: boolean;
 }
 
 export default class ArticleConcept {

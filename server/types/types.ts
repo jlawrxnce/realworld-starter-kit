@@ -11,7 +11,6 @@ export type ArticleRequest = {
   description: string;
   body: string;
   tagList?: Array<string>;
-  isPremium?: boolean;
 };
 
 export type CommentRequest = {
@@ -43,7 +42,20 @@ export type ArticleResponse = {
   updatedAt: string;
   favorited: boolean;
   favoritesCount: number;
+  hasPaywall: boolean;
   author: ProfileResponse;
+};
+
+export type MembershipRequest = {
+  tier: string;
+  autoRenew?: boolean;
+};
+
+export type MembershipResponse = {
+  username: string;
+  tier: string;
+  renewalDate: string;
+  autoRenew: boolean;
 };
 
 export type ArticlesResponse = {

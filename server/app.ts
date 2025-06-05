@@ -5,9 +5,11 @@ import ArticleConcept from "./concepts/article";
 import CommentConcept from "./concepts/comment";
 import FavoriteConcept from "./concepts/favorite";
 import TagConcept from "./concepts/tags";
+import MembershipConcept from "./concepts/membership";
+import PaywallConcept from "./concepts/paywall";
+import JwtConcept from "./concepts/jwt";
 import { MergeConcept } from "./concepts/operational/merge";
 import MapperConcept from "./concepts/operational/mapper";
-import JwtConcept from "./concepts/jwt";
 
 // App Definition using concepts
 export const Account = new AccountConcept("account");
@@ -17,6 +19,8 @@ export const Article = new ArticleConcept("articles");
 export const Comment = new CommentConcept("comments");
 export const Favorite = new FavoriteConcept("favorites");
 export const Tag = new TagConcept("tags");
+export const Membership = new MembershipConcept("memberships");
+export const Paywall = new PaywallConcept("paywalls");
 export const Jwt = new JwtConcept();
 
 export const Merge = new MergeConcept();
