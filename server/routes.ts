@@ -1,8 +1,7 @@
-import { Account, Article, Comment, Favorite, Follower, Jwt, Map, Merge, Profile, Tag, Membership, Paywall } from "./app";
-import { Tier } from "./concepts/membership";
+import { Account, Article, Comment, Favorite, Follower, Jwt, Map, Merge, Profile, Tag } from "./app";
 import { Router, getExpressRouter } from "./framework/router";
 import { ObjectId } from "mongodb";
-import { ArticleRequest, CommentRequest, UserRequest, UserResponse, MembershipRequest } from "types/types";
+import { ArticleRequest, CommentRequest, UserRequest, UserResponse } from "types/types";
 
 const EMPTY_ARTICLE = {
   article: {
@@ -226,22 +225,12 @@ class Routes {
   }
 
   @Router.post("/articles/:slug/comments")
-  async createComment(slug: string, comment: CommentRequest, auth: string) {
+  async addComment(comment: CommentRequest, slug: string, auth: string) {
     const userId = await Jwt.authenticate(auth);
     const article = await Article.getBySlugOrThrow(slug);
-    let userTier = Tier.Free;
-    try {
-      const membership = await Membership.getByOwner(userId);
-      userTier = membership.tier;
-    } catch {
-      // Default to Free tier if no membership found
-    }
-    const paywall = await Paywall.getByContent(article._id);
-    if (paywall?.enabled && userTier !== Tier.Gold) {
-      throw new Error("Article is behind a paywall. Upgrade to Gold tier to comment.");
-    }
-    const newComment = await Comment.create(userId, article._id, comment.body);
+    const newComment = await Comment.create(userId, article?._id, comment.body);
     const profile = await Profile.getProfileById(userId);
+
     const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following: true }), EMPTY_PROFILE.profile, profile);
     return Merge.createTransformedResponse("comment", (merged) => ({ ...merged, id: newComment._id.toString() }), EMPTY_COMMENT.comment, newComment, profileMessage);
   }
@@ -258,18 +247,6 @@ class Routes {
     }
     const article = await Article.getBySlugOrThrow(slug);
     const comments = await Comment.getCommentsByTarget(article._id);
-    let userTier = Tier.Free;
-    if (userId) {
-      try {
-        const membership = await Membership.getByOwner(userId);
-        userTier = membership.tier;
-      } catch {
-        // Default to Free tier if no membership found
-      }
-    }
-    if (userTier !== Tier.Gold) {
-      throw new Error("Only Gold tier members can view comments.");
-    }
     const commentMessages = await Promise.all(
       comments.map(async (comment) => {
         const profile = await Profile.getProfileById(comment.author);
@@ -281,6 +258,7 @@ class Routes {
     return { comments: commentMessages };
   }
 
+  // TOOD: I don't think this works
   @Router.delete("/articles/:slug/comments/:id")
   async deleteComment(auth: string, slug: string, id: string) {
     await Jwt.authenticate(auth);
@@ -318,60 +296,6 @@ class Routes {
   @Router.get("/tags")
   async getTags() {
     return { tags: Tag.stringify(await Tag.getTags({})) };
-  }
-
-  @Router.post("/membership")
-  async activateMembership(membership: MembershipRequest, auth: string) {
-    const userId = await Jwt.authenticate(auth);
-    const tier = membership.tier as Tier;
-    const result = await Membership.activateMembership(userId, tier);
-    if (!result) throw new Error("Failed to activate membership");
-    const profile = await Profile.getProfileById(userId);
-    return { membership: { username: profile.username, tier: result.tier, renewalDate: result.renewalDate.toISOString(), autoRenew: result.autoRenew } };
-  }
-
-  @Router.put("/membership")
-  async updateMembership(membership: MembershipRequest, auth: string) {
-    const userId = await Jwt.authenticate(auth);
-    const tier = membership.tier as Tier;
-    const result = await Membership.updateMembership(userId, tier, membership.autoRenew ?? false);
-    if (!result) throw new Error("Failed to update membership");
-    const profile = await Profile.getProfileById(userId);
-    return { membership: { username: profile.username, tier: result.tier, renewalDate: result.renewalDate.toISOString(), autoRenew: result.autoRenew } };
-  }
-
-  @Router.get("/membership")
-  async getMembership(auth: string) {
-    const userId = await Jwt.authenticate(auth);
-    const result = await Membership.getByOwner(userId);
-    if (!result) throw new Error("Membership not found");
-    const profile = await Profile.getProfileById(userId);
-    return { membership: { username: profile.username, tier: result.tier, renewalDate: result.renewalDate.toISOString(), autoRenew: result.autoRenew } };
-  }
-
-  @Router.put("/articles/:slug/paywall")
-  async togglePaywall(slug: string, auth: string) {
-    const userId = await Jwt.authenticate(auth);
-    const article = await Article.getBySlugOrThrow(slug);
-    if (article.author.toString() !== userId.toString()) {
-      throw new Error("Only the article author can toggle the paywall");
-    }
-    let userTier = Tier.Free;
-    try {
-      const membership = await Membership.getByOwner(userId);
-      userTier = membership.tier;
-    } catch {
-      // Default to Free tier if no membership found
-    }
-    if (userTier !== Tier.Gold) {
-      throw new Error("Only Gold tier members can enable paywalls");
-    }
-    const paywall = await Paywall.toggle(article._id);
-    const author = await Profile.getProfileById(article.author);
-    const favorites = await Favorite.getFavorites(article._id);
-    const favorited = favorites.some((favorite) => favorite.userId.toString() === userId.toString());
-    const favoritesCount = favorites.length;
-    return { article: { ...EMPTY_ARTICLE.article, ...article, author, favorited, favoritesCount, hasPaywall: paywall?.enabled ?? false } };
   }
 }
 
