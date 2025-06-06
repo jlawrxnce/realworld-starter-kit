@@ -35,9 +35,10 @@ export default class ArticleConcept {
   }
 
   async getByAuthors(authorId: ObjectId[], limit = 10, offset = 0) {
+    console.log("authorId", authorId);
     // Filter articles by authors the user follows, apply sorting, pagination, and re-sort to chronological order
     const articles: Array<ArticleDoc> = await this.articles.readMany(
-      { authorId: { $in: authorId } },
+      { author: { $in: authorId } },
       {
         sort: { createdAt: -1 },
         skip: offset,
