@@ -4,6 +4,8 @@ export type UserRequest = {
   password: string;
   image: string;
   bio: string;
+  token?: string;
+  hasPaywall?: boolean;
 };
 
 export type ArticleRequest = {
@@ -11,7 +13,9 @@ export type ArticleRequest = {
   description: string;
   body: string;
   tagList?: Array<string>;
-  isPremium?: boolean;
+  token?: string;
+  slug?: string;
+  hasPaywall?: boolean;
 };
 
 export type CommentRequest = {
@@ -70,6 +74,7 @@ export type TagsResponse = {
 
 export enum Tier {
   Free = "Free",
+  Silver = "Silver",
   Gold = "Gold",
 }
 
@@ -83,4 +88,5 @@ export type MembershipResponse = {
   tier: Tier;
   renewalDate: string;
   autoRenew: boolean;
+  totalRevenue: number;
 };

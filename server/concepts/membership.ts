@@ -4,6 +4,7 @@ import { BadValuesError } from "./errors";
 
 export enum Tier {
   Free = "Free",
+  Silver = "Silver",
   Gold = "Gold",
 }
 
@@ -12,6 +13,7 @@ export interface MembershipDoc extends BaseDoc {
   tier: Tier;
   renewalDate: Date;
   autoRenew: boolean;
+  totalRevenue: number;
 }
 
 export default class MembershipConcept {
@@ -31,7 +33,7 @@ export default class MembershipConcept {
     }
     const renewalDate = new Date();
     renewalDate.setMonth(renewalDate.getMonth() + 1);
-    const _id = await this.memberships.createOne({ owner, tier, renewalDate, autoRenew: false });
+    const _id = await this.memberships.createOne({ owner, tier, renewalDate, autoRenew: false, totalRevenue: 0 });
     return await this.memberships.readOne({ _id });
   }
 
@@ -40,7 +42,7 @@ export default class MembershipConcept {
     if (!membership) {
       // Return a default free membership
       const now = new Date();
-      return { owner, tier: Tier.Free, renewalDate: now, autoRenew: false };
+      return { owner, tier: Tier.Free, renewalDate: now, autoRenew: false, totalRevenue: 0 };
     }
     return membership;
   }

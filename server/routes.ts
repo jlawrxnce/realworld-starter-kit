@@ -1,8 +1,8 @@
-import { Account, Article, Comment, Favorite, Follower, Jwt, Merge, Profile, Tag, Membership, Paywall } from "./app";
+import { Account, Article, Comment, Favorite, Follower, Jwt, Merge, Profile, Tag, Membership, Paywall, View } from "./app";
 import { Router, getExpressRouter } from "./framework/router";
 import { ObjectId } from "mongodb";
 import { ArticleRequest, CommentRequest, UserRequest, UserResponse, Tier, MembershipRequest } from "./types/types";
-import { NotAllowedError } from "./concepts/errors";
+import { NotAllowedError, NotFoundError, BadValuesError } from "./concepts/errors";
 
 const EMPTY_ARTICLE = {
   article: {
@@ -29,6 +29,7 @@ const EMPTY_MEMBBERSHIP = {
     tier: Tier.Free,
     renewalDate: new Date("01").toISOString(),
     autoRenew: false,
+    totalRevenue: 0,
   },
 };
 
@@ -59,11 +60,21 @@ class Routes {
   }
 
   @Router.put("/user")
-  async updateUser(user: UserRequest, auth: string) {
-    const userId = await Jwt.authenticate(auth);
-    const account = await Account.update(userId, { ...user });
-    const profile = await Profile.update(userId, { ...user });
-    return Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, { token: auth });
+  async updateUser(user: UserRequest) {
+    const _id = await Jwt.authenticate(user.token ?? "");
+    const membership = await Membership.getMembership(_id);
+
+    // Check if user is trying to set paywall and has appropriate tier
+    if (user.hasPaywall !== undefined) {
+      if (membership.tier === Tier.Free) {
+        throw new NotAllowedError("Free users cannot set paywall");
+      }
+    }
+
+    const account = await Account.update(_id, user);
+    const profile = await Profile.update(_id, user);
+    const jwt = await Jwt.update(account._id, account.username);
+    return Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, { token: jwt });
   }
 
   @Router.get("/profiles/:username")
@@ -115,18 +126,85 @@ class Routes {
     );
   }
 
+  @Router.put("/articles/:slug/view")
+  async viewArticle(slug: string, token?: string) {
+    const existingArticle = await Article.getBySlug(slug);
+    if (!existingArticle) {
+      throw new NotFoundError(`Article ${slug} does not exist!`);
+    }
+
+    // Get viewer's membership tier
+    let viewerId: ObjectId | undefined;
+    if (token) {
+      try {
+        viewerId = await Jwt.authenticate(token);
+      } catch {
+        // Invalid token, treat as anonymous viewer
+      }
+    }
+
+    // Check if article has paywall and viewer has access
+    if (existingArticle.hasPaywall) {
+      if (!viewerId) {
+        throw new NotAllowedError("Must be logged in to view paywalled content");
+      }
+      const viewerMembership = await Membership.getMembership(viewerId);
+      if (viewerMembership.tier === Tier.Free) {
+        throw new NotAllowedError("Free users cannot view paywalled content");
+      }
+    }
+
+    // Create view if logged in and not the author
+    if (viewerId && viewerId.toString() !== existingArticle.author.toString()) {
+      try {
+        await View.create(existingArticle._id, viewerId, "Article");
+
+        // Calculate and update revenue if article has paywall
+        if (existingArticle.hasPaywall) {
+          const authorMembership = await Membership.getMembership(existingArticle.author);
+          const revenueAmount = authorMembership.tier === Tier.Gold ? 0.25 : 0.10;
+          await Membership.update(existingArticle.author, {
+            totalRevenue: authorMembership.totalRevenue + revenueAmount,
+          });
+        }
+      } catch (e) {
+        if (e instanceof BadValuesError) {
+          // Already viewed in last 24h, ignore
+        } else {
+          throw e;
+        }
+      }
+    }
+
+    // Increment view count
+    await Article.update(existingArticle._id, { numViews: (existingArticle.numViews ?? 0) + 1 });
+    return { article: await Article.getBySlug(slug) };
+  }
+
   @Router.put("/articles/:slug")
-  async updateArticle(slug: string, article: ArticleRequest, auth: string) {
-    const userId = await Jwt.authenticate(auth);
+  async updateArticle(article: ArticleRequest) {
+    if (!article.token || !article.slug) {
+      throw new BadValuesError("Missing token or slug");
+    }
+    const _id = await Jwt.authenticate(article.token);
+    const existingArticle = await Article.getBySlug(article.slug);
+    if (existingArticle === null) {
+      throw new NotFoundError(`Article ${article.slug} does not exist!`);
+    }
+    if (existingArticle.author.toString() !== _id.toString()) {
+      throw new NotAllowedError("You can only edit your own articles!");
+    }
 
-    const profile = await Profile.getProfileById(userId);
-    const oldArticle = await Article.getBySlugOrThrow(slug);
-    const newArticle = await Article.update(oldArticle._id, { title: article.title, description: article.description, body: article.body });
-    const favoritesCount = await Favorite.countTargetFavorites(newArticle._id);
-    await Tag.update(oldArticle._id, article.tagList ?? []);
+    // Check if user is trying to set paywall and has appropriate tier
+    if (article.hasPaywall !== undefined) {
+      const membership = await Membership.getMembership(_id);
+      if (membership.tier === Tier.Free) {
+        throw new NotAllowedError("Free users cannot set paywall");
+      }
+    }
 
-    const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following: true, favoritesCount: favoritesCount }), EMPTY_PROFILE.profile, profile);
-    return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList: article.tagList ?? [], favorited: false, favoritesCount }), EMPTY_ARTICLE.article, newArticle, profileMessage);
+    const updated = await Article.update(existingArticle._id, article);
+    return { article: updated };
   }
 
   @Router.get("/articles")
