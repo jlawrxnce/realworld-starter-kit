@@ -34,7 +34,7 @@ class Routes {
     }
     const newMembership = await Membership.create(userId, membership.tier as Tier);
     const account = await Account.getAccountById(userId);
-    return Merge.createResponse("membership", EMPTY_MEMBERSHIP.membership, newMembership ?? {}, { username: account.username });
+    return Merge.createTransformedResponse("membership", (merged) => ({ ...merged, username: account.username, totalRevenue: 0 }), EMPTY_MEMBERSHIP.membership, newMembership ?? {});
   }
 
   @Router.put("/membership")
@@ -45,9 +45,9 @@ class Routes {
       throw new NotAllowedError("Free users cannot update membership");
     }
     const updatedMembership = await Membership.update(userId, membership);
-    const account = await Account.getAccountById(userId);
     const totalRevenue = await Revenue.getTotalRevenue(userId);
-    return Merge.createResponse("membership", EMPTY_MEMBERSHIP.membership, updatedMembership ?? {}, { username: account.username, totalRevenue });
+    const account = await Account.getAccountById(userId);
+    return Merge.createTransformedResponse("membership", (merged) => ({ ...merged, totalRevenue, username: account.username }), EMPTY_MEMBERSHIP.membership, updatedMembership ?? {});
   }
 
   @Router.get("/membership")
@@ -56,7 +56,8 @@ class Routes {
     const membership = await Membership.getMembership(userId);
     const account = await Account.getAccountById(userId);
     const totalRevenue = await Revenue.getTotalRevenue(userId);
-    return Merge.createResponse("membership", EMPTY_MEMBERSHIP.membership, membership ?? {}, { username: account.username, totalRevenue });
+
+    return Merge.createTransformedResponse("membership", (merged) => ({ ...merged, totalRevenue, username: account.username }), EMPTY_MEMBERSHIP.membership, membership ?? {});
   }
 
   @Router.put("/articles/:slug/view")
@@ -71,22 +72,22 @@ class Routes {
     if (hasPaywall) {
       const viewerMembership = await Membership.getMembership(userId);
       if (viewerMembership.tier === Tier.Free) {
-        return EMPTY_ARTICLE;
+        throw new NotAllowedError("Free users cannot view paywalled articles");
       }
 
       // Record view and revenue if viewer is not the author
-      if (article.author.toString() !== userId.toString()) {
-        await View.create(userId, article._id);
-        const authorMembership = await Membership.getMembership(article.author);
-        await Revenue.create(article.author, article._id, authorMembership.tier);
-      }
+
+      await View.create(userId, article._id);
+      const authorMembership = await Membership.getMembership(article.author);
+      await Revenue.create(article.author, article._id, authorMembership.tier);
     }
 
     const profile = await Profile.getProfileById(article.author);
     const tagList = await Tag.stringify(await Tag.getTagByTarget(article._id));
     const favorited = await Favorite.isFavoritedByUser(article._id, userId);
     const favoritesCount = await Favorite.countTargetFavorites(article._id);
-    const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following: true }), EMPTY_PROFILE.profile, profile);
+    const following = await Follower.isFollowing(userId, article.author);
+    const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
     return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited, favoritesCount, hasPaywall }), EMPTY_ARTICLE.article, article, profileMessage);
   }
 
@@ -94,7 +95,7 @@ class Routes {
   async togglePaywall(slug: string, auth: string) {
     const userId = await Jwt.authenticate(auth);
     const membership = await Membership.getMembership(userId);
-    if (membership.tier !== Tier.Gold) {
+    if (membership.tier === Tier.Free) {
       throw new NotAllowedError("Only Gold members can toggle paywall");
     }
     const article = await Article.getBySlug(slug);
@@ -147,6 +148,9 @@ class Routes {
     const userId = await Jwt.authenticate(auth);
     const account = await Account.update(userId, { ...user });
     const profile = await Profile.update(userId, { ...user });
+    if (user.hasPaywall) {
+      await Paywall.toggle(userId);
+    }
     return Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, { token: auth });
   }
 
@@ -165,7 +169,7 @@ class Routes {
 
     // If profile has paywall and viewer is not authenticated or is Free tier, return empty profile
     if (hasPaywall && (!userId || (await Membership.getMembership(userId)).tier === Tier.Free)) {
-      return EMPTY_PROFILE;
+      throw new NotAllowedError("Free users cannot view paywalled profiles");
     }
 
     return Merge.createResponse("profile", EMPTY_PROFILE.profile, profile, { following, hasPaywall });
@@ -176,6 +180,13 @@ class Routes {
     const userId = await Jwt.authenticate(auth);
     const profile = await Profile.getProfileByUsername(username);
     await Follower.create(userId, profile._id);
+    const hasPaywall = await Paywall.hasPaywall(profile._id);
+    if (hasPaywall) {
+      const membership = await Membership.getMembership(userId);
+      if (membership.tier === Tier.Free) {
+        throw new NotAllowedError("Free users cannot follow paywalled profiles");
+      }
+    }
     return Merge.createTransformedResponse("profile", (merged) => ({ ...merged, following: true }), EMPTY_PROFILE.profile, profile);
   }
 
