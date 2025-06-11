@@ -1,5 +1,5 @@
 import { NotAllowedError } from "./concepts/errors";
-import { Account, Article, Comment, Favorite, Follower, Jwt, Map, Merge, Profile, Tag, Membership, Paywall } from "./app";
+import { Account, Article, Comment, Favorite, Follower, Jwt, Map, Merge, Profile, Tag, Membership, Paywall, View, Revenue } from "./app";
 import { Tier } from "./concepts/membership";
 import { Router, getExpressRouter } from "./framework/router";
 import { ObjectId } from "mongodb";
@@ -52,10 +52,17 @@ class Routes {
   }
 
   @Router.put("/user")
-  async updateUser(user: UserRequest, auth: string) {
+  async updateUser(auth: string, user: UserRequest) {
     const userId = await Jwt.authenticate(auth);
-    const account = await Account.update(userId, { ...user });
-    const profile = await Profile.update(userId, { ...user });
+    const membership = await Membership.getByOwner(userId);
+    if (user.hasPaywall && membership.tier === Tier.Free) {
+      throw new NotAllowedError("Free users cannot enable paywall!");
+    }
+    const account = await Account.getAccountById(userId);
+    const profile = await Profile.update(userId, user);
+    if (user.hasPaywall !== undefined) {
+      await Paywall.toggle(userId);
+    }
     return Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, { token: auth });
   }
 
@@ -117,17 +124,25 @@ class Routes {
   }
 
   @Router.put("/articles/:slug")
-  async updateArticle(slug: string, article: ArticleRequest, auth: string) {
+  async updateArticle(auth: string, slug: string, article: ArticleRequest) {
     const userId = await Jwt.authenticate(auth);
-
-    const profile = await Profile.getProfileById(userId);
-    const oldArticle = await Article.getBySlugOrThrow(slug);
-    const newArticle = await Article.update(oldArticle._id, { title: article.title, description: article.description, body: article.body });
-    const favoritesCount = await Favorite.countTargetFavorites(newArticle._id);
-    await Tag.update(oldArticle._id, article.tagList ?? []);
-
-    const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following: true, favoritesCount: favoritesCount }), EMPTY_PROFILE.profile, profile);
-    return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList: article.tagList ?? [], favorited: false, favoritesCount }), EMPTY_ARTICLE.article, newArticle, profileMessage);
+    const articleDoc = await Article.getBySlug(slug);
+    if (!articleDoc || articleDoc.author.toString() !== userId.toString()) {
+      throw new NotAllowedError("You are not the author of this article!");
+    }
+    const membership = await Membership.getByOwner(userId);
+    if (article.hasPaywall && membership.tier === Tier.Free) {
+      throw new NotAllowedError("Free users cannot enable paywall!");
+    }
+    const updatedArticle = await Article.update(articleDoc._id, article);
+    if (article.hasPaywall !== undefined) {
+      await Paywall.toggle(articleDoc._id);
+    }
+    const profile = await Profile.getProfileById(updatedArticle.author);
+    const following = await Follower.isFollowing(userId, updatedArticle.author);
+    const favorited = await Favorite.isFavoritedByUser(userId, updatedArticle._id);
+    const favoritesCount = await Favorite.countTargetFavorites(updatedArticle._id);
+    return Merge.createResponse<ArticleRequest>("article", EMPTY_ARTICLE.article, updatedArticle, profile, { following, favorited, favoritesCount });
   }
 
   @Router.get("/articles")
@@ -224,29 +239,50 @@ class Routes {
       }
     }
     const article = await Article.getBySlugOrThrow(slug);
-    const profile = await Profile.getProfileById(article?.author);
+    const profile = await Profile.getProfileById(article.author);
     const tagList = await Tag.stringify(await Tag.getTagByTarget(article._id));
-    const favorited = false;
+    const favorited = userId ? await Favorite.isFavoritedByUser(userId, article._id) : false;
     const favoritesCount = await Favorite.countTargetFavorites(article._id);
     const paywall = await Paywall.getByContent(article._id);
+
+    // PaywallCheck
     if (paywall?.enabled) {
       if (!userId) {
-        throw new NotAllowedError("Only Gold tier members can view articles behind paywalls.");
+        return { article: { ...EMPTY_ARTICLE.article, slug, title: article.title, description: article.description, hasPaywall: true } };
       }
-      const userTier = await Membership.getByOwner(userId);
-      if (userTier.tier !== Tier.Gold) {
-        throw new NotAllowedError("Only Gold tier members can view articles behind paywalls.");
+      const userMembership = await Membership.getByOwner(userId);
+      if (userMembership.tier === Tier.Free) {
+        return { article: { ...EMPTY_ARTICLE.article, slug, title: article.title, description: article.description, hasPaywall: true } };
+      }
+
+      // Record view and revenue if eligible
+      if (userId.toString() !== article.author.toString()) {
+        await View.create(article._id, userId);
+        await Revenue.create(article._id, article.author, userMembership.tier);
       }
     }
 
-    const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following: true }), EMPTY_PROFILE.profile, profile);
-    return Merge.createTransformedResponse(
-      "article",
-      (merged) => ({ ...merged, tagList, favorited, favoritesCount, hasPaywall: paywall?.enabled ?? false }),
-      EMPTY_ARTICLE.article,
-      article,
-      profileMessage,
-    );
+    return {
+      article: {
+        ...EMPTY_ARTICLE.article,
+        slug,
+        title: article.title,
+        description: article.description,
+        body: article.body,
+        tagList,
+        createdAt: article.createdAt,
+        updatedAt: article.updatedAt,
+        favorited,
+        favoritesCount,
+        hasPaywall: paywall?.enabled || false,
+        author: {
+          username: profile?.username || "",
+          bio: profile?.bio || "",
+          image: profile?.image || "",
+          following: userId ? await Follower.isFollowing(userId, article.author) : false,
+        },
+      },
+    };
   }
 
   @Router.delete("/articles/:slug")
@@ -414,6 +450,33 @@ class Routes {
     const favoritesCount = favorites.length;
     const tagList = await Tag.stringify(await Tag.getTagByTarget(article._id));
     return { article: { ...EMPTY_ARTICLE.article, ...article, author, favorited, favoritesCount, tagList, hasPaywall: paywall?.enabled ?? false } };
+  }
+
+  @Router.put("/articles/:slug/view")
+  async viewArticle(auth: string, slug: string) {
+    const userId = await Jwt.authenticate(auth);
+    const article = await Article.getBySlug(slug);
+    if (!article) {
+      throw new NotAllowedError("Article not found!");
+    }
+    const paywall = await Paywall.getByContent(article._id);
+    const userMembership = await Membership.getByOwner(userId);
+    const authorMembership = await Membership.getByOwner(article.author);
+
+    if (paywall?.enabled && userMembership.tier === Tier.Free) {
+      return { article: EMPTY_ARTICLE.article };
+    }
+
+    const view = await View.create(article._id, userId);
+    if (view && paywall?.enabled && userId.toString() !== article.author.toString()) {
+      await Revenue.create(article._id, article.author, authorMembership.tier);
+    }
+
+    const profile = await Profile.getProfileById(article.author);
+    const following = await Follower.isFollowing(userId, article.author);
+    const favorited = await Favorite.isFavoritedByUser(userId, article._id);
+    const favoritesCount = await Favorite.countTargetFavorites(article._id);
+    return Merge.createResponse<ArticleRequest>("article", EMPTY_ARTICLE.article, article, profile, { following, favorited, favoritesCount });
   }
 }
 

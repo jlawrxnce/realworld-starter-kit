@@ -4,6 +4,7 @@ import { NotAllowedError, NotFoundError, UnprocessableEntityError } from "./erro
 
 export enum Tier {
   Free = "Free",
+  Silver = "Silver",
   Gold = "Gold",
 }
 

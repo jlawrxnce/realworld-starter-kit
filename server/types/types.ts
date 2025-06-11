@@ -6,6 +6,7 @@ export type UserRequest = {
   password: string;
   image: string;
   bio: string;
+  hasPaywall?: boolean;
 };
 
 export type ArticleRequest = {
@@ -13,6 +14,7 @@ export type ArticleRequest = {
   description: string;
   body: string;
   tagList?: Array<string>;
+  hasPaywall?: boolean;
 };
 
 export type CommentRequest = {
@@ -58,6 +60,7 @@ export type MembershipResponse = {
   tier: Tier;
   renewalDate: string;
   autoRenew: boolean;
+  totalRevenue: number;
 };
 
 export type ArticlesResponse = {
