@@ -1,10 +1,10 @@
 import { ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
-import { BadValuesError, NotAllowedError, NotFoundError } from "./errors";
+import { BadValuesError } from "./errors";
 
 export enum Tier {
   Free = "Free",
-  Gold = "Gold"
+  Gold = "Gold",
 }
 
 export interface MembershipDoc extends BaseDoc {
@@ -25,7 +25,7 @@ export default class MembershipConcept {
     if (tier === Tier.Free) {
       throw new BadValuesError("Cannot create membership with Free tier");
     }
-    
+
     const existingMembership = await this.memberships.readOne({ user });
     if (existingMembership) {
       throw new BadValuesError("User already has a membership");
@@ -46,18 +46,18 @@ export default class MembershipConcept {
         user,
         tier: Tier.Free,
         renewalDate: new Date(),
-        autoRenew: false
+        autoRenew: false,
       };
     }
     return membership;
   }
 
-  async update(user: ObjectId, update: Partial<{ tier: Tier; autoRenew: boolean }>) {
+  async update(user: ObjectId, update: Partial<MembershipDoc>) {
     const membership = await this.memberships.readOne({ user });
     if (!membership) {
       throw new BadValuesError("User does not have an active membership to update");
     }
-    
+
     await this.memberships.partialUpdateOne({ user }, update);
     return await this.memberships.readOne({ user });
   }

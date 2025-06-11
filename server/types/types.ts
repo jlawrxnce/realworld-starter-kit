@@ -1,3 +1,5 @@
+import { Tier } from "concepts/membership";
+
 export type UserRequest = {
   email: string;
   username: string;
@@ -34,13 +36,13 @@ export type ProfileResponse = {
 };
 
 export type MembershipRequest = {
-  tier: string;
+  tier: Tier;
   autoRenew?: boolean;
 };
 
 export type MembershipResponse = {
   username: string;
-  tier: string;
+  tier: Tier;
   renewalDate: string;
   autoRenew: boolean;
 };

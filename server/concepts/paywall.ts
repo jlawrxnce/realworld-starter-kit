@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
+import { NotFoundError } from "./errors";
 export interface PaywallDoc extends BaseDoc {
   contentId: ObjectId; // ID of the content being restricted (e.g. article ID)
   hasPaywall: boolean;
@@ -19,8 +20,12 @@ export default class PaywallConcept {
 
   async toggle(contentId: ObjectId) {
     const paywall = (await this.paywalls.readOne({ contentId })) ?? (await this.create(contentId));
+    if (!paywall) throw new NotFoundError("Paywall not found");
     await this.paywalls.partialUpdateOne({ contentId }, { hasPaywall: !paywall.hasPaywall });
-    return await this.paywalls.readOne({ contentId });
+
+    const updatedPaywall = await this.paywalls.readOne({ contentId });
+    if (!updatedPaywall) throw new NotFoundError("Failed to toggle paywall");
+    return updatedPaywall;
   }
 
   async hasPaywall(contentId: ObjectId) {
