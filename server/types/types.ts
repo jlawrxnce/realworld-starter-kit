@@ -1,12 +1,9 @@
-import { Tier } from "concepts/membership";
-
 export type UserRequest = {
   email: string;
   username: string;
   password: string;
   image: string;
   bio: string;
-  hasPaywall?: boolean;
 };
 
 export type ArticleRequest = {
@@ -14,7 +11,7 @@ export type ArticleRequest = {
   description: string;
   body: string;
   tagList?: Array<string>;
-  hasPaywall?: boolean;
+  isPremium?: boolean;
 };
 
 export type CommentRequest = {
@@ -46,21 +43,7 @@ export type ArticleResponse = {
   updatedAt: string;
   favorited: boolean;
   favoritesCount: number;
-  hasPaywall: boolean;
   author: ProfileResponse;
-};
-
-export type MembershipRequest = {
-  tier: Tier;
-  autoRenew?: boolean;
-};
-
-export type MembershipResponse = {
-  username: string;
-  tier: Tier;
-  renewalDate: string;
-  autoRenew: boolean;
-  totalRevenue: number;
 };
 
 export type ArticlesResponse = {
