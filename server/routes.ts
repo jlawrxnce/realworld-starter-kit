@@ -2,7 +2,7 @@ import { Account, Article, Comment, Favorite, Follower, Jwt, Merge, Profile, Tag
 import { Router, getExpressRouter } from "./framework/router";
 import { ObjectId } from "mongodb";
 import { ArticleRequest, CommentRequest, UserRequest, UserResponse, Tier, MembershipRequest } from "./types/types";
-import { NotAllowedError, NotFoundError, BadValuesError } from "./concepts/errors";
+import { NotAllowedError, NotFoundError } from "./concepts/errors";
 
 const EMPTY_ARTICLE = {
   article: {
@@ -20,7 +20,7 @@ const EMPTY_ARTICLE = {
   },
 };
 
-const EMPTY_PROFILE = { profile: { username: "", bio: "", image: "", following: false } };
+const EMPTY_PROFILE = { profile: { username: "", bio: "", image: "", following: false, hasPaywall: false } };
 const EMPTY_USER = { user: { username: "", bio: "", image: "", email: "", token: "" } };
 const EMPTY_COMMENT = { comment: { id: 0, body: "", createdAt: new Date("01").toISOString(), updatedAt: new Date("01").toISOString(), author: EMPTY_PROFILE.profile } };
 const EMPTY_MEMBBERSHIP = {
@@ -60,8 +60,8 @@ class Routes {
   }
 
   @Router.put("/user")
-  async updateUser(user: UserRequest) {
-    const _id = await Jwt.authenticate(user.token ?? "");
+  async updateUser(user: UserRequest, auth: string) {
+    const _id = await Jwt.authenticate(auth);
     const membership = await Membership.getMembership(_id);
 
     // Check if user is trying to set paywall and has appropriate tier
@@ -73,6 +73,7 @@ class Routes {
 
     const account = await Account.update(_id, user);
     const profile = await Profile.update(_id, user);
+    await Paywall.toggle(_id);
     const jwt = await Jwt.update(account._id, account.username);
     return Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, { token: jwt });
   }
@@ -89,13 +90,31 @@ class Routes {
     }
     const profile = await Profile.getProfileByUsername(username);
     const following = userId ? await Follower.isFollowing(userId, profile._id) : false;
-    return Merge.createTransformedResponse("profile", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
+    const hasPaywall = await Paywall.isPaywalled(profile._id);
+    if (hasPaywall) {
+      if (!userId) {
+        throw new NotAllowedError("Must be logged in to view paywalled content");
+      }
+      const membership = await Membership.getMembership(userId);
+      if (membership.tier === Tier.Free) {
+        throw new NotAllowedError("Free users cannot view paywalled content");
+      }
+    }
+    return Merge.createTransformedResponse("profile", (merged) => ({ ...merged, following, hasPaywall }), EMPTY_PROFILE.profile, profile);
   }
 
   @Router.post("/profiles/:username/follow")
   async followProfile(username: string, auth: string) {
     const userId = await Jwt.authenticate(auth);
     const profile = await Profile.getProfileByUsername(username);
+    const hasPaywall = await Paywall.isPaywalled(profile._id);
+    console.log("hasPaywall", hasPaywall, profile);
+    if (hasPaywall) {
+      const membership = await Membership.getMembership(userId);
+      if (membership.tier === Tier.Free) {
+        throw new NotAllowedError("Free users cannot view paywalled content");
+      }
+    }
     await Follower.create(userId, profile._id);
     return Merge.createTransformedResponse("profile", (merged) => ({ ...merged, following: true }), EMPTY_PROFILE.profile, profile);
   }
@@ -112,7 +131,6 @@ class Routes {
   async createArticle(article: ArticleRequest, auth: string) {
     const userId = await Jwt.authenticate(auth);
     const profile = await Profile.getProfileById(userId);
-    console.log("user id when making article", userId);
     const newArticle = await Article.create(userId, article.title, article.description, article.body);
     await Tag.create(newArticle._id, article.tagList ?? []);
 
@@ -127,7 +145,7 @@ class Routes {
   }
 
   @Router.put("/articles/:slug/view")
-  async viewArticle(slug: string, token?: string) {
+  async viewArticle(slug: string, auth?: string) {
     const existingArticle = await Article.getBySlug(slug);
     if (!existingArticle) {
       throw new NotFoundError(`Article ${slug} does not exist!`);
@@ -135,16 +153,16 @@ class Routes {
 
     // Get viewer's membership tier
     let viewerId: ObjectId | undefined;
-    if (token) {
+    if (auth) {
       try {
-        viewerId = await Jwt.authenticate(token);
+        viewerId = await Jwt.authenticate(auth);
       } catch {
         // Invalid token, treat as anonymous viewer
       }
     }
-
+    const hasPaywall = await Paywall.isPaywalled(existingArticle._id);
     // Check if article has paywall and viewer has access
-    if (existingArticle.hasPaywall) {
+    if (hasPaywall) {
       if (!viewerId) {
         throw new NotAllowedError("Must be logged in to view paywalled content");
       }
@@ -155,41 +173,37 @@ class Routes {
     }
 
     // Create view if logged in and not the author
-    if (viewerId && viewerId.toString() !== existingArticle.author.toString()) {
-      try {
-        await View.create(existingArticle._id, viewerId, "Article");
+    if (viewerId) {
+      await View.create(existingArticle._id, viewerId, "Article");
 
-        // Calculate and update revenue if article has paywall
-        if (existingArticle.hasPaywall) {
-          const authorMembership = await Membership.getMembership(existingArticle.author);
-          const revenueAmount = authorMembership.tier === Tier.Gold ? 0.25 : 0.10;
-          await Membership.update(existingArticle.author, {
-            totalRevenue: authorMembership.totalRevenue + revenueAmount,
-          });
-        }
-      } catch (e) {
-        if (e instanceof BadValuesError) {
-          // Already viewed in last 24h, ignore
-        } else {
-          throw e;
-        }
+      // Calculate and update revenue if article has paywall
+      if (hasPaywall) {
+        const authorMembership = await Membership.getMembership(existingArticle.author);
+        const revenueAmount = authorMembership.tier === Tier.Gold ? 0.25 : 0.1;
+        await Membership.update(existingArticle.author, {
+          totalRevenue: authorMembership.totalRevenue + revenueAmount,
+        });
       }
     }
 
     // Increment view count
-    await Article.update(existingArticle._id, { numViews: (existingArticle.numViews ?? 0) + 1 });
-    return { article: await Article.getBySlug(slug) };
+
+    const tagList = await Tag.stringify(await Tag.getTagByTarget(existingArticle._id));
+    const favorited = viewerId ? await Favorite.isFavoritedByUser(viewerId, existingArticle._id) : false;
+    const favoritesCount = await Favorite.countTargetFavorites(existingArticle._id);
+    const following = viewerId ? await Follower.isFollowing(viewerId, existingArticle.author) : false;
+    const profile = await Profile.getProfileById(existingArticle.author);
+    const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
+
+    return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited, favoritesCount, hasPaywall }), EMPTY_ARTICLE.article, existingArticle, profileMessage);
   }
 
   @Router.put("/articles/:slug")
-  async updateArticle(article: ArticleRequest) {
-    if (!article.token || !article.slug) {
-      throw new BadValuesError("Missing token or slug");
-    }
-    const _id = await Jwt.authenticate(article.token);
-    const existingArticle = await Article.getBySlug(article.slug);
+  async updateArticle(article: ArticleRequest, auth: string, slug: string) {
+    const _id = await Jwt.authenticate(auth);
+    const existingArticle = await Article.getBySlug(slug);
     if (existingArticle === null) {
-      throw new NotFoundError(`Article ${article.slug} does not exist!`);
+      throw new NotFoundError(`Article ${slug} does not exist!`);
     }
     if (existingArticle.author.toString() !== _id.toString()) {
       throw new NotAllowedError("You can only edit your own articles!");
@@ -204,7 +218,14 @@ class Routes {
     }
 
     const updated = await Article.update(existingArticle._id, article);
-    return { article: updated };
+    const profile = await Profile.getProfileById(_id);
+    const following = await Follower.isFollowing(_id, profile._id);
+    const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
+    const tagList = await Tag.stringify(await Tag.getTagByTarget(updated._id));
+    const favorited = await Favorite.isFavoritedByUser(_id, updated._id);
+    const favoritesCount = await Favorite.countTargetFavorites(updated._id);
+    const hasPaywall = await Paywall.isPaywalled(updated._id);
+    return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited, favoritesCount, hasPaywall }), EMPTY_ARTICLE.article, updated, profileMessage);
   }
 
   @Router.get("/articles")
@@ -307,7 +328,7 @@ class Routes {
       if (!userId) {
         throw new NotAllowedError("Authentication required for paywalled content");
       }
-      const hasMembership = await Membership.verifyGoldAccess(userId);
+      const hasMembership = await Membership.verifyMembershipAccess(userId);
       if (!hasMembership) {
         throw new NotAllowedError("Gold membership required for paywalled content");
       }
@@ -341,7 +362,7 @@ class Routes {
     // Add paywall check
     const hasPaywall = await Paywall.isPaywalled(article._id);
     if (hasPaywall) {
-      const hasMembership = await Membership.verifyGoldAccess(userId);
+      const hasMembership = await Membership.verifyMembershipAccess(userId);
       if (!hasMembership) {
         throw new NotAllowedError("Gold membership required for paywalled content");
       }
@@ -372,7 +393,7 @@ class Routes {
       if (!userId) {
         throw new NotAllowedError("Authentication required for paywalled content");
       }
-      const hasMembership = await Membership.verifyGoldAccess(userId);
+      const hasMembership = await Membership.verifyMembershipAccess(userId);
       if (!hasMembership) {
         throw new NotAllowedError("Gold membership required for paywalled content");
       }
@@ -399,7 +420,7 @@ class Routes {
     // Add paywall check
     const hasPaywall = await Paywall.isPaywalled(article._id);
     if (hasPaywall) {
-      const hasMembership = await Membership.verifyGoldAccess(userId);
+      const hasMembership = await Membership.verifyMembershipAccess(userId);
       if (!hasMembership) {
         throw new Error("Gold membership required for paywalled content");
       }
@@ -416,7 +437,7 @@ class Routes {
     // Add paywall check
     const hasPaywall = await Paywall.isPaywalled(article._id);
     if (hasPaywall) {
-      const hasMembership = await Membership.verifyGoldAccess(userId);
+      const hasMembership = await Membership.verifyMembershipAccess(userId);
       if (!hasMembership) {
         throw new NotAllowedError("Gold membership required for paywalled content");
       }
@@ -440,7 +461,7 @@ class Routes {
     const article = await Article.getBySlugOrThrow(slug);
     const hasPaywall = await Paywall.isPaywalled(article._id);
     if (hasPaywall) {
-      const hasMembership = await Membership.verifyGoldAccess(userId);
+      const hasMembership = await Membership.verifyMembershipAccess(userId);
       if (!hasMembership) {
         throw new NotAllowedError("Gold membership required for paywalled content");
       }
@@ -500,9 +521,9 @@ class Routes {
       throw new NotAllowedError("Only the article author can toggle paywall");
     }
 
-    const hasMembership = await Membership.verifyGoldAccess(userId);
+    const hasMembership = await Membership.verifyMembershipAccess(userId);
     if (!hasMembership) {
-      throw new NotAllowedError("Gold membership required to add paywall");
+      throw new NotAllowedError("Membership required to add paywall");
     }
 
     const paywall = await Paywall.toggle(article._id);

@@ -60,8 +60,8 @@ export default class MembershipConcept {
     return await this.memberships.readOne({ owner });
   }
 
-  async verifyGoldAccess(owner: ObjectId) {
+  async verifyMembershipAccess(owner: ObjectId) {
     const membership = await this.getMembership(owner);
-    return membership.tier === Tier.Gold;
+    return membership.tier !== Tier.Free;
   }
 }

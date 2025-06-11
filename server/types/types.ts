@@ -13,8 +13,6 @@ export type ArticleRequest = {
   description: string;
   body: string;
   tagList?: Array<string>;
-  token?: string;
-  slug?: string;
   hasPaywall?: boolean;
 };
 

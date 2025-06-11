@@ -9,8 +9,6 @@ export interface ArticleDoc extends BaseDoc {
   title: string;
   description: string;
   body: string;
-  hasPaywall: boolean;
-  numViews: number;
 }
 
 export default class ArticleConcept {
@@ -20,11 +18,11 @@ export default class ArticleConcept {
     this.articles = new DocCollection<ArticleDoc>(name);
   }
 
-  async create(author: ObjectId, title: string, description: string, body: string, hasPaywall: boolean = false) {
+  async create(author: ObjectId, title: string, description: string, body: string) {
     // TODO: check for title uniqueness
     const slug = await this.generateSlug(title);
     if ((await this.getBySlug(slug)) != null) throw new BadValuesError("Title already exists");
-    const _id = await this.articles.createOne({ author, slug, title, description, body, hasPaywall, numViews: 0 });
+    const _id = await this.articles.createOne({ author, slug, title, description, body });
     console.log("id", _id);
     const article = await this.articles.readOne({ _id });
     if (article == null) throw new NotFoundError("New article was not made");
