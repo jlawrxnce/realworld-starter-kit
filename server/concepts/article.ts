@@ -9,6 +9,7 @@ export interface ArticleDoc extends BaseDoc {
   title: string;
   description: string;
   body: string;
+  hasPaywall: boolean;
 }
 
 export default class ArticleConcept {
@@ -35,10 +36,9 @@ export default class ArticleConcept {
   }
 
   async getByAuthors(authorId: ObjectId[], limit = 10, offset = 0) {
-    console.log("authorId", authorId);
     // Filter articles by authors the user follows, apply sorting, pagination, and re-sort to chronological order
     const articles: Array<ArticleDoc> = await this.articles.readMany(
-      { author: { $in: authorId } },
+      { authorId: { $in: authorId } },
       {
         sort: { createdAt: -1 },
         skip: offset,
