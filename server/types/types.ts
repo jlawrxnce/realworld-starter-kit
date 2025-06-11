@@ -1,4 +1,4 @@
-import { Tier } from "concepts/membership";
+import { Tier } from "../concepts/membership";
 
 export type UserRequest = {
   email: string;
@@ -33,6 +33,7 @@ export type ProfileResponse = {
   bio: string;
   image: string;
   following: boolean;
+  hasPaywall?: boolean;
 };
 
 export type MembershipRequest = {
@@ -45,6 +46,7 @@ export type MembershipResponse = {
   tier: Tier;
   renewalDate: string;
   autoRenew: boolean;
+  totalRevenue: number;
 };
 
 export type ArticleResponse = {

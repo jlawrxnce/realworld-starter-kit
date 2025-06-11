@@ -4,6 +4,7 @@ import { BadValuesError } from "./errors";
 
 export enum Tier {
   Free = "Free",
+  Silver = "Silver",
   Gold = "Gold",
 }
 

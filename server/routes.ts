@@ -1,4 +1,4 @@
-import { Account, Article, Comment, Favorite, Follower, Jwt, Map, Merge, Profile, Tag, Membership, Paywall } from "./app";
+import { Account, Article, Comment, Favorite, Follower, Jwt, Map, Merge, Profile, Tag, Membership, Paywall, View, Revenue } from "./app";
 import { Router, getExpressRouter } from "./framework/router";
 import { ObjectId } from "mongodb";
 import { ArticleRequest, CommentRequest, UserRequest, UserResponse, MembershipRequest } from "types/types";
@@ -20,10 +20,10 @@ const EMPTY_ARTICLE = {
   },
 };
 
-const EMPTY_PROFILE = { profile: { username: "", bio: "", image: "", following: false } };
+const EMPTY_PROFILE = { profile: { username: "", bio: "", image: "", following: false, hasPaywall: false } };
 const EMPTY_USER = { user: { username: "", bio: "", image: "", email: "", token: "" } };
 const EMPTY_COMMENT = { comment: { id: 0, body: "", createdAt: new Date("01").toISOString(), updatedAt: new Date("01").toISOString(), author: EMPTY_PROFILE.profile } };
-const EMPTY_MEMBERSHIP = { membership: { username: "", tier: Tier.Free, renewalDate: new Date().toISOString(), autoRenew: false } };
+const EMPTY_MEMBERSHIP = { membership: { username: "", tier: Tier.Free, renewalDate: new Date().toISOString(), autoRenew: false, totalRevenue: 0 } };
 
 class Routes {
   @Router.post("/membership")
@@ -46,7 +46,8 @@ class Routes {
     }
     const updatedMembership = await Membership.update(userId, membership);
     const account = await Account.getAccountById(userId);
-    return Merge.createResponse("membership", EMPTY_MEMBERSHIP.membership, updatedMembership ?? {}, { username: account.username });
+    const totalRevenue = await Revenue.getTotalRevenue(userId);
+    return Merge.createResponse("membership", EMPTY_MEMBERSHIP.membership, updatedMembership ?? {}, { username: account.username, totalRevenue });
   }
 
   @Router.get("/membership")
@@ -54,7 +55,39 @@ class Routes {
     const userId = await Jwt.authenticate(auth);
     const membership = await Membership.getMembership(userId);
     const account = await Account.getAccountById(userId);
-    return Merge.createResponse("membership", EMPTY_MEMBERSHIP.membership, membership ?? {}, { username: account.username });
+    const totalRevenue = await Revenue.getTotalRevenue(userId);
+    return Merge.createResponse("membership", EMPTY_MEMBERSHIP.membership, membership ?? {}, { username: account.username, totalRevenue });
+  }
+
+  @Router.put("/articles/:slug/view")
+  async viewArticle(slug: string, auth: string) {
+    const userId = await Jwt.authenticate(auth);
+    const article = await Article.getBySlug(slug);
+    if (!article) {
+      throw new NotFoundError(`Article ${slug} not found!`);
+    }
+
+    const hasPaywall = await Paywall.hasPaywall(article._id);
+    if (hasPaywall) {
+      const viewerMembership = await Membership.getMembership(userId);
+      if (viewerMembership.tier === Tier.Free) {
+        return EMPTY_ARTICLE;
+      }
+
+      // Record view and revenue if viewer is not the author
+      if (article.author.toString() !== userId.toString()) {
+        await View.create(userId, article._id);
+        const authorMembership = await Membership.getMembership(article.author);
+        await Revenue.create(article.author, article._id, authorMembership.tier);
+      }
+    }
+
+    const profile = await Profile.getProfileById(article.author);
+    const tagList = await Tag.stringify(await Tag.getTagByTarget(article._id));
+    const favorited = await Favorite.isFavoritedByUser(article._id, userId);
+    const favoritesCount = await Favorite.countTargetFavorites(article._id);
+    const profileMessage = Merge.createTransformedResponse("author", (merged) => ({ ...merged, following: true }), EMPTY_PROFILE.profile, profile);
+    return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited, favoritesCount, hasPaywall }), EMPTY_ARTICLE.article, article, profileMessage);
   }
 
   @Router.put("/articles/:slug/paywall")
@@ -118,18 +151,24 @@ class Routes {
   }
 
   @Router.get("/profiles/:username")
-  async getProfile(username: string, auth: string) {
-    let userId: ObjectId | undefined;
+  async getProfile(username: string, auth?: string) {
+    let userId = null;
     if (auth) {
-      try {
-        userId = await Jwt.authenticate(auth);
-      } catch {
-        /* optional auth */
-      }
+      userId = await Jwt.authenticate(auth);
     }
     const profile = await Profile.getProfileByUsername(username);
+    if (!profile) {
+      throw new NotFoundError(`Profile ${username} not found!`);
+    }
     const following = userId ? await Follower.isFollowing(userId, profile._id) : false;
-    return Merge.createTransformedResponse("profile", (merged) => ({ ...merged, following }), EMPTY_PROFILE.profile, profile);
+    const hasPaywall = await Paywall.hasPaywall(profile._id);
+
+    // If profile has paywall and viewer is not authenticated or is Free tier, return empty profile
+    if (hasPaywall && (!userId || (await Membership.getMembership(userId)).tier === Tier.Free)) {
+      return EMPTY_PROFILE;
+    }
+
+    return Merge.createResponse("profile", EMPTY_PROFILE.profile, profile, { following, hasPaywall });
   }
 
   @Router.post("/profiles/:username/follow")
