@@ -11,7 +11,7 @@ export type ArticleRequest = {
   description: string;
   body: string;
   tagList?: Array<string>;
-  isPremium?: boolean;
+  hasPaywall?: boolean;
 };
 
 export type CommentRequest = {
@@ -33,6 +33,18 @@ export type ProfileResponse = {
   following: boolean;
 };
 
+export type MembershipRequest = {
+  tier: string;
+  autoRenew?: boolean;
+};
+
+export type MembershipResponse = {
+  username: string;
+  tier: string;
+  renewalDate: string;
+  autoRenew: boolean;
+};
+
 export type ArticleResponse = {
   slug: string;
   title: string;
@@ -44,6 +56,7 @@ export type ArticleResponse = {
   favorited: boolean;
   favoritesCount: number;
   author: ProfileResponse;
+  hasPaywall: boolean;
 };
 
 export type ArticlesResponse = {

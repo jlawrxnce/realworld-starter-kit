@@ -8,6 +8,8 @@ import TagConcept from "./concepts/tags";
 import { MergeConcept } from "./concepts/operational/merge";
 import MapperConcept from "./concepts/operational/mapper";
 import JwtConcept from "./concepts/jwt";
+import MembershipConcept from "./concepts/membership";
+import PaywallConcept from "./concepts/paywall";
 
 // App Definition using concepts
 export const Account = new AccountConcept("account");
@@ -21,3 +23,5 @@ export const Jwt = new JwtConcept();
 
 export const Merge = new MergeConcept();
 export const Map = new MapperConcept();
+export const Membership = new MembershipConcept("memberships");
+export const Paywall = new PaywallConcept("paywalls");

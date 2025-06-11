@@ -1,7 +1,9 @@
-import { Account, Article, Comment, Favorite, Follower, Jwt, Map, Merge, Profile, Tag } from "./app";
+import { Account, Article, Comment, Favorite, Follower, Jwt, Map, Merge, Profile, Tag, Membership, Paywall } from "./app";
 import { Router, getExpressRouter } from "./framework/router";
 import { ObjectId } from "mongodb";
-import { ArticleRequest, CommentRequest, UserRequest, UserResponse } from "types/types";
+import { ArticleRequest, CommentRequest, UserRequest, UserResponse, MembershipRequest } from "types/types";
+import { BadValuesError, NotAllowedError, NotFoundError } from "./concepts/errors";
+import { Tier } from "./concepts/membership";
 
 const EMPTY_ARTICLE = {
   article: {
@@ -21,8 +23,64 @@ const EMPTY_ARTICLE = {
 const EMPTY_PROFILE = { profile: { username: "", bio: "", image: "", following: false } };
 const EMPTY_USER = { user: { username: "", bio: "", image: "", email: "", token: "" } };
 const EMPTY_COMMENT = { comment: { id: 0, body: "", createdAt: new Date("01").toISOString(), updatedAt: new Date("01").toISOString(), author: EMPTY_PROFILE.profile } };
+const EMPTY_MEMBERSHIP = { membership: { username: "", tier: Tier.Free, renewalDate: new Date().toISOString(), autoRenew: false } };
 
 class Routes {
+  @Router.post("/membership")
+  async activateMembership(tier: MembershipRequest, auth: string) {
+    const userId = await Jwt.authenticate(auth);
+    if (tier.tier === Tier.Free) {
+      throw new BadValuesError("Cannot activate Free tier membership");
+    }
+    const membership = await Membership.create(userId, tier.tier as Tier);
+    const account = await Account.getAccountById(userId);
+    return Merge.createResponse("membership", EMPTY_MEMBERSHIP.membership, membership ?? {}, { username: account.username });
+  }
+
+  @Router.put("/membership")
+  async updateMembership(update: Partial<MembershipRequest>, auth: string) {
+    const userId = await Jwt.authenticate(auth);
+    const currentMembership = await Membership.getMembership(userId);
+    if (currentMembership.tier === Tier.Free) {
+      throw new BadValuesError("Free users cannot update membership");
+    }
+    const membership = await Membership.update(userId, {
+      tier: update.tier as Tier | undefined,
+      autoRenew: update.autoRenew,
+    });
+    const account = await Account.getAccountById(userId);
+    return Merge.createResponse("membership", EMPTY_MEMBERSHIP.membership, membership ?? {}, { username: account.username });
+  }
+
+  @Router.get("/membership")
+  async getMembership(auth: string) {
+    const userId = await Jwt.authenticate(auth);
+    const membership = await Membership.getMembership(userId);
+    const account = await Account.getAccountById(userId);
+    return Merge.createResponse("membership", EMPTY_MEMBERSHIP.membership, membership ?? {}, { username: account.username });
+  }
+
+  @Router.put("/articles/:slug/paywall")
+  async togglePaywall(slug: string, auth: string) {
+    const userId = await Jwt.authenticate(auth);
+    const membership = await Membership.getMembership(userId);
+    if (membership.tier !== Tier.Gold) {
+      throw new NotAllowedError("Only Gold members can toggle paywall");
+    }
+    const article = await Article.getBySlug(slug);
+    if (!article) {
+      throw new NotFoundError(`Article ${slug} not found!`);
+    }
+    if (article.author.toString() !== userId.toString()) {
+      throw new NotAllowedError("Only the author can toggle paywall");
+    }
+    const paywall = await Paywall.toggle(article._id);
+    if (!paywall) throw new NotFoundError("Failed to toggle paywall");
+    await Article.articles.partialUpdateOne({ _id: article._id }, { hasPaywall: paywall.hasPaywall });
+    const updatedArticle = await Article.getBySlug(slug);
+    return await Article.getArticleResponse(updatedArticle, userId);
+  }
+
   @Router.post("/users")
   async register(user: UserRequest) {
     const account = await Account.create(user.username, user.password, user.email);

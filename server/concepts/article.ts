@@ -9,6 +9,7 @@ export interface ArticleDoc extends BaseDoc {
   title: string;
   description: string;
   body: string;
+  hasPaywall?: boolean;
 }
 
 export default class ArticleConcept {
@@ -94,5 +95,36 @@ export default class ArticleConcept {
       .replace(/\s+/g, "-") // replace spaces with hyphens
       .replace(/-+/g, "-"); // remove consecutive hyphens
     return title;
+  }
+
+  async getArticleResponse(article: ArticleDoc | null, userId: ObjectId) {
+    if (!article) {
+      throw new NotFoundError("Article not found");
+    }
+    const { Favorite, Profile, Tag } = await import("../app");
+    const [profile, favorited, favoritesCount, tags] = await Promise.all([
+      Profile.getProfileById(article.author),
+      Favorite.isFavoritedByUser(userId, article._id),
+      Favorite.countTargetFavorites(article._id),
+      Tag.getTagByTarget(article._id),
+    ]);
+    return {
+      slug: article.slug,
+      title: article.title,
+      description: article.description,
+      body: article.body,
+      tagList: Tag.stringify(tags),
+      createdAt: article.createdAt,
+      updatedAt: article.updatedAt,
+      favorited,
+      favoritesCount,
+      hasPaywall: article.hasPaywall ?? false,
+      author: {
+        username: profile.username,
+        bio: profile.bio,
+        image: profile.image,
+        following: false, // TODO: implement following
+      },
+    };
   }
 }
