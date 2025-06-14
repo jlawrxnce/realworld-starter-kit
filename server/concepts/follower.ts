@@ -29,6 +29,7 @@ export default class FollowerConcept {
   }
 
   async getFollowers(query: Filter<FollowerDoc>) {
+    console.log("query", query);
     const followers = await this.followers.readMany(query, {
       sort: { dateUpdated: -1 },
     });

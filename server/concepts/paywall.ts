@@ -1,9 +1,10 @@
 import { ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
-import { NotFoundError } from "./errors";
+import { BadValuesError } from "./errors";
+
 export interface PaywallDoc extends BaseDoc {
-  contentId: ObjectId; // ID of the content being restricted (e.g. article ID)
-  hasPaywall: boolean;
+  target: ObjectId; // Generic target ID that this paywall applies to
+  enabled: boolean;
 }
 
 export default class PaywallConcept {
@@ -13,23 +14,28 @@ export default class PaywallConcept {
     this.paywalls = new DocCollection<PaywallDoc>(name);
   }
 
-  async create(contentId: ObjectId) {
-    const _id = await this.paywalls.createOne({ contentId, hasPaywall: false });
+  async create(target: ObjectId) {
+    const existing = await this.paywalls.readOne({ target });
+    if (existing) {
+      throw new BadValuesError("Paywall already exists for this target");
+    }
+    const _id = await this.paywalls.createOne({ target, enabled: false });
     return await this.paywalls.readOne({ _id });
   }
 
-  async toggle(contentId: ObjectId) {
-    const paywall = (await this.paywalls.readOne({ contentId })) ?? (await this.create(contentId));
-    if (!paywall) throw new NotFoundError("Paywall not found");
-    await this.paywalls.partialUpdateOne({ contentId }, { hasPaywall: !paywall.hasPaywall });
-
-    const updatedPaywall = await this.paywalls.readOne({ contentId });
-    if (!updatedPaywall) throw new NotFoundError("Failed to toggle paywall");
-    return updatedPaywall;
+  async toggle(target: ObjectId) {
+    let paywall = await this.paywalls.readOne({ target });
+    if (!paywall) {
+      paywall = await this.create(target);
+    }
+    if (paywall) {
+      await this.paywalls.partialUpdateOne({ target }, { enabled: !paywall.enabled });
+    }
+    return await this.paywalls.readOne({ target });
   }
 
-  async hasPaywall(contentId: ObjectId) {
-    const paywall = await this.paywalls.readOne({ contentId });
-    return paywall?.hasPaywall ?? false;
+  async isPaywalled(target: ObjectId) {
+    const paywall = await this.paywalls.readOne({ target });
+    return paywall?.enabled || false;
   }
 }

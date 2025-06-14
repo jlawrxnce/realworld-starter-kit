@@ -9,10 +9,11 @@ export enum Tier {
 }
 
 export interface MembershipDoc extends BaseDoc {
-  user: ObjectId;
+  owner: ObjectId;
   tier: Tier;
   renewalDate: Date;
   autoRenew: boolean;
+  totalRevenue: number;
 }
 
 export default class MembershipConcept {
@@ -22,49 +23,45 @@ export default class MembershipConcept {
     this.memberships = new DocCollection<MembershipDoc>(name);
   }
 
-  async create(user: ObjectId, tier: Tier) {
+  async create(owner: ObjectId, tier: Tier) {
     if (tier === Tier.Free) {
       throw new BadValuesError("Cannot create membership with Free tier");
     }
-
-    const existingMembership = await this.memberships.readOne({ user });
-    if (existingMembership) {
+    const existing = await this.memberships.readOne({ owner });
+    if (existing) {
       throw new BadValuesError("User already has a membership");
     }
-
     const renewalDate = new Date();
-    renewalDate.setMonth(renewalDate.getMonth() + 1); // Set renewal date to 1 month from now
-
-    const _id = await this.memberships.createOne({ user, tier, renewalDate, autoRenew: false });
+    renewalDate.setMonth(renewalDate.getMonth() + 1);
+    const _id = await this.memberships.createOne({ owner, tier, renewalDate, autoRenew: false, totalRevenue: 0 });
     return await this.memberships.readOne({ _id });
   }
 
-  async getMembership(user: ObjectId) {
-    const membership = await this.memberships.readOne({ user });
+  async getMembership(owner: ObjectId) {
+    const membership = await this.memberships.readOne({ owner });
     if (!membership) {
-      // Return default free membership
-      return {
-        user,
-        tier: Tier.Free,
-        renewalDate: new Date(),
-        autoRenew: false,
-      };
+      // Return a default free membership
+      const now = new Date();
+      return { owner, tier: Tier.Free, renewalDate: now, autoRenew: false, totalRevenue: 0 };
     }
     return membership;
   }
 
-  async update(user: ObjectId, update: Partial<MembershipDoc>) {
-    const membership = await this.memberships.readOne({ user });
+  async update(owner: ObjectId, updates: Partial<MembershipDoc>) {
+    const membership = await this.memberships.readOne({ owner });
     if (!membership) {
-      throw new BadValuesError("User does not have an active membership to update");
+      return null;
     }
-
-    await this.memberships.partialUpdateOne({ user }, update);
-    return await this.memberships.readOne({ user });
+    const renewalDate = new Date(membership.renewalDate);
+    if (updates.tier !== undefined && updates.tier !== membership.tier) {
+      renewalDate.setMonth(renewalDate.getMonth() + 1);
+    }
+    await this.memberships.partialUpdateOne({ owner }, { ...updates, renewalDate });
+    return await this.memberships.readOne({ owner });
   }
 
-  async isGoldMember(user: ObjectId) {
-    const membership = await this.getMembership(user);
-    return membership.tier === Tier.Gold;
+  async verifyMembershipAccess(owner: ObjectId) {
+    const membership = await this.getMembership(owner);
+    return membership.tier !== Tier.Free;
   }
 }
