@@ -34,4 +34,9 @@ export default class ViewConcept {
   async getViewsByTarget(target: ObjectId) {
     return await this.views.readMany({ target });
   }
+
+  async getTotalViews(author: ObjectId) {
+    const views = await this.views.readMany({ target: author, type: "Article" });
+    return views.length;
+  }
 }

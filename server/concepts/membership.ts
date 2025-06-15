@@ -4,7 +4,7 @@ import { BadValuesError } from "./errors";
 
 export enum Tier {
   Free = "Free",
-  Silver = "Silver",
+  Trial = "Trial",
   Gold = "Gold",
 }
 
@@ -14,6 +14,7 @@ export interface MembershipDoc extends BaseDoc {
   renewalDate: Date;
   autoRenew: boolean;
   totalRevenue: number;
+  startDate: Date;
 }
 
 export default class MembershipConcept {
@@ -31,9 +32,21 @@ export default class MembershipConcept {
     if (existing) {
       throw new BadValuesError("User already has a membership");
     }
-    const renewalDate = new Date();
-    renewalDate.setMonth(renewalDate.getMonth() + 1);
-    const _id = await this.memberships.createOne({ owner, tier, renewalDate, autoRenew: false, totalRevenue: 0 });
+    const now = new Date();
+    const renewalDate = new Date(now);
+    if (tier === Tier.Trial) {
+      renewalDate.setDate(now.getDate() + 7);
+    } else {
+      renewalDate.setDate(now.getDate() + 30);
+    }
+    const _id = await this.memberships.createOne({ 
+      owner, 
+      tier, 
+      renewalDate, 
+      autoRenew: false, 
+      totalRevenue: 0,
+      startDate: now 
+    });
     return await this.memberships.readOne({ _id });
   }
 
@@ -42,7 +55,7 @@ export default class MembershipConcept {
     if (!membership) {
       // Return a default free membership
       const now = new Date();
-      return { owner, tier: Tier.Free, renewalDate: now, autoRenew: false, totalRevenue: 0 };
+      return { owner, tier: Tier.Free, renewalDate: now, autoRenew: false, totalRevenue: 0, startDate: now };
     }
     return membership;
   }

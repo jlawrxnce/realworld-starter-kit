@@ -1,4 +1,5 @@
 import { Account, Article, Comment, Favorite, Follower, Jwt, Merge, Profile, Tag, Membership, Paywall, View } from "./app";
+import { BadValuesError } from "./concepts/errors";
 import { Router, getExpressRouter } from "./framework/router";
 import { ObjectId } from "mongodb";
 import { ArticleRequest, CommentRequest, UserRequest, UserResponse, Tier, MembershipRequest } from "./types/types";
@@ -30,6 +31,7 @@ const EMPTY_MEMBBERSHIP = {
     renewalDate: new Date("01").toISOString(),
     autoRenew: false,
     totalRevenue: 0,
+    totalViews: 0,
   },
 };
 
@@ -495,12 +497,54 @@ class Routes {
   }
 
   @Router.put("/membership")
-  async updateMembership(membership: MembershipRequest, auth: string) {
+  async updateMembership(req: MembershipRequest, auth: string) {
     const userId = await Jwt.authenticate(auth);
-    const updatedMembership = await Membership.update(userId, membership);
-    if (!updatedMembership) throw new NotAllowedError("Failed to update membership");
+    const currentMembership = await Membership.getMembership(userId);
+
+    if (req.tier === Tier.Trial && currentMembership.tier === Tier.Gold) {
+      throw new BadValuesError("Gold users cannot downgrade to Trial");
+    }
+
+    if (req.tier === Tier.Free && currentMembership.tier === Tier.Gold) {
+      // Turn off auto-renewal when Gold downgrades to Free
+      await Membership.update(userId, { autoRenew: false });
+    }
+
+    const membership = await Membership.update(userId, req);
     const profile = await Profile.getProfileById(userId);
-    return Merge.createTransformedResponse("membership", (merged) => ({ ...merged, username: profile.username }), EMPTY_MEMBBERSHIP.membership, updatedMembership);
+    const totalViews = await View.getTotalViews(userId);
+    return Merge.createTransformedResponse("membership", (merged) => ({ ...merged, totalViews: membership && membership.tier === Tier.Free ? null : totalViews }), EMPTY_MEMBBERSHIP.membership, membership || currentMembership, profile);
+  }
+
+  @Router.put("/membership/renew")
+  async renewMembership(auth: string) {
+    const userId = await Jwt.authenticate(auth);
+    const currentMembership = await Membership.getMembership(userId);
+
+    if (currentMembership.tier === Tier.Free) {
+      throw new BadValuesError("Free users cannot renew membership");
+    }
+
+    const now = new Date();
+    const maxRenewalDate = new Date(now);
+    maxRenewalDate.setDate(now.getDate() + 75);
+
+    const newRenewalDate = new Date(currentMembership.renewalDate);
+    newRenewalDate.setDate(currentMembership.renewalDate.getDate() + 30);
+
+    if (newRenewalDate > maxRenewalDate) {
+      throw new BadValuesError("Cannot renew more than 75 days in advance");
+    }
+
+    // If Trial user renews, upgrade to Gold
+    const updatedTier = currentMembership.tier === Tier.Trial ? Tier.Gold : currentMembership.tier;
+
+    const membership = await Membership.update(userId, { renewalDate: newRenewalDate, tier: updatedTier });
+
+    const profile = await Profile.getProfileById(userId);
+    const totalViews = await View.getTotalViews(userId);
+    if (!membership) throw new Error("Failed to update membership");
+    return Merge.createTransformedResponse("membership", (merged) => ({ ...merged, totalViews }), EMPTY_MEMBBERSHIP.membership, membership, profile);
   }
 
   @Router.get("/membership")
@@ -526,7 +570,7 @@ class Routes {
       throw new NotAllowedError("Membership required to add paywall");
     }
 
-    const paywall = await Paywall.toggle(article._id);
+    const paywall = await Paywall.toggle(article._id, userId);
     if (!paywall) throw new Error("Failed to toggle paywall");
     const profile = await Profile.getProfileById(article.author);
     const tagList = await Tag.stringify(await Tag.getTagByTarget(article._id));

@@ -72,7 +72,7 @@ export type TagsResponse = {
 
 export enum Tier {
   Free = "Free",
-  Silver = "Silver",
+  Trial = "Trial",
   Gold = "Gold",
 }
 
@@ -81,10 +81,11 @@ export type MembershipRequest = {
   autoRenew: boolean;
 };
 
-export type MembershipResponse = {
+export interface MembershipResponse {
   username: string;
   tier: Tier;
   renewalDate: string;
   autoRenew: boolean;
   totalRevenue: number;
-};
+  totalViews: number | null;
+}
