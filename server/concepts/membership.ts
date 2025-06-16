@@ -39,13 +39,13 @@ export default class MembershipConcept {
     } else {
       renewalDate.setDate(now.getDate() + 30);
     }
-    const _id = await this.memberships.createOne({ 
-      owner, 
-      tier, 
-      renewalDate, 
-      autoRenew: false, 
+    const _id = await this.memberships.createOne({
+      owner,
+      tier,
+      renewalDate,
+      autoRenew: false,
       totalRevenue: 0,
-      startDate: now 
+      startDate: now,
     });
     return await this.memberships.readOne({ _id });
   }
@@ -65,11 +65,8 @@ export default class MembershipConcept {
     if (!membership) {
       return null;
     }
-    const renewalDate = new Date(membership.renewalDate);
-    if (updates.tier !== undefined && updates.tier !== membership.tier) {
-      renewalDate.setMonth(renewalDate.getMonth() + 1);
-    }
-    await this.memberships.partialUpdateOne({ owner }, { ...updates, renewalDate });
+
+    await this.memberships.partialUpdateOne({ owner }, { ...updates });
     return await this.memberships.readOne({ owner });
   }
 
