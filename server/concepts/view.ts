@@ -27,6 +27,10 @@ export default class ViewConcept {
     return await this.views.count({ contentId });
   }
 
+  async countByTarget(contentId: ObjectId) {
+    return await this.views.count({ contentId });
+  }
+
   async getViewsByViewer(viewerId: ObjectId) {
     return await this.views.readMany({ viewerId });
   }

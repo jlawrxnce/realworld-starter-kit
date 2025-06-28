@@ -61,6 +61,7 @@ export type MembershipResponse = {
   renewalDate: string;
   autoRenew: boolean;
   totalRevenue: number;
+  totalViews: number | null;
 };
 
 export type ArticlesResponse = {

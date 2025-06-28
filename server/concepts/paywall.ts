@@ -39,6 +39,13 @@ export default class PaywallConcept {
     const _id = await this.paywalls.createOne({ contentId, enabled: !paywall.enabled, requiredTier: Tier.Gold });
     return await this.paywalls.readOne({ _id });
   }
+  // This is a placeholder method for the API layer to implement
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getActivePaywallsByOwner(_ownerId: ObjectId) {
+    // This method will be used by the API layer to count active paywalls
+    // The actual implementation will be in the API layer since concepts should not reference other concepts
+    return [];
+  }
 
   async isAccessible(contentId: ObjectId, userTier: Tier) {
     const paywall = await this.getByContent(contentId);
