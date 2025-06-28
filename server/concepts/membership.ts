@@ -1,10 +1,10 @@
 import { ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
-import { BadValuesError } from "./errors";
+import { NotAllowedError, NotFoundError, UnprocessableEntityError } from "./errors";
 
 export enum Tier {
   Free = "Free",
-  Trial = "Trial",
+  Silver = "Silver",
   Gold = "Gold",
 }
 
@@ -13,65 +13,60 @@ export interface MembershipDoc extends BaseDoc {
   tier: Tier;
   renewalDate: Date;
   autoRenew: boolean;
-  totalRevenue: number;
-  startDate: Date;
 }
 
 export default class MembershipConcept {
   public readonly memberships: DocCollection<MembershipDoc>;
 
-  constructor(name: string) {
-    this.memberships = new DocCollection<MembershipDoc>(name);
+  constructor(collectionName: string) {
+    this.memberships = new DocCollection<MembershipDoc>(collectionName);
   }
 
-  async create(owner: ObjectId, tier: Tier) {
-    if (tier === Tier.Free) {
-      throw new BadValuesError("Cannot create membership with Free tier");
-    }
-    const existing = await this.memberships.readOne({ owner });
-    if (existing) {
-      throw new BadValuesError("User already has a membership");
-    }
-    const now = new Date();
-    const renewalDate = new Date(now);
-    if (tier === Tier.Trial) {
-      renewalDate.setDate(now.getDate() + 7);
-    } else {
-      renewalDate.setDate(now.getDate() + 30);
-    }
-    const _id = await this.memberships.createOne({
-      owner,
-      tier,
-      renewalDate,
-      autoRenew: false,
-      totalRevenue: 0,
-      startDate: now,
-    });
+  async create(owner: ObjectId) {
+    const _id = await this.memberships.createOne({ owner, tier: Tier.Free, renewalDate: new Date(), autoRenew: false });
     return await this.memberships.readOne({ _id });
   }
 
-  async getMembership(owner: ObjectId) {
+  async getByOwner(owner: ObjectId) {
     const membership = await this.memberships.readOne({ owner });
     if (!membership) {
-      // Return a default free membership
-      const now = new Date();
-      return { owner, tier: Tier.Free, renewalDate: now, autoRenew: false, totalRevenue: 0, startDate: now };
+      return { owner, tier: Tier.Free, autoRenew: false, renewalDate: new Date() };
     }
     return membership;
   }
 
-  async update(owner: ObjectId, updates: Partial<MembershipDoc>) {
-    const membership = await this.memberships.readOne({ owner });
-    if (!membership) {
-      return null;
+  async updateMembership(owner: ObjectId, updates: Partial<MembershipDoc>) {
+    console.log("updates", updates);
+    const membership = await this.getByOwner(owner);
+    if (membership.tier === Tier.Free) {
+      throw new NotAllowedError("Free users cannot update membership!");
     }
-
-    await this.memberships.partialUpdateOne({ owner }, { ...updates });
-    return await this.memberships.readOne({ owner });
+    console.log("membership", membership, updates);
+    await this.memberships.partialUpdateOne({ owner }, updates);
+    const updatedMembership = await this.getByOwner(owner);
+    console.log("updatedMembership", updatedMembership);
+    if (!updatedMembership) {
+      throw new NotFoundError("Membership not found!");
+    }
+    return updatedMembership;
   }
 
-  async verifyMembershipAccess(owner: ObjectId) {
-    const membership = await this.getMembership(owner);
-    return membership.tier !== Tier.Free;
+  async activateMembership(owner: ObjectId, tier: Tier) {
+    if (tier === Tier.Free) {
+      throw new UnprocessableEntityError("Cannot activate Free tier membership!");
+    }
+    await this.memberships.deleteOne({ owner });
+    const _id = await this.memberships.createOne({ owner, tier, autoRenew: false, renewalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
+    return await this.memberships.readOne({ _id });
+  }
+
+  async hasTierAccess(owner: ObjectId, requiredTier: Tier) {
+    try {
+      const membership = await this.getByOwner(owner);
+      if (requiredTier === Tier.Free) return true;
+      return membership.tier === requiredTier;
+    } catch {
+      return requiredTier === Tier.Free; // If no membership found, only allow Free tier access
+    }
   }
 }

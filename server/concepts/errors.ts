@@ -5,7 +5,7 @@ import { FormattableError } from "../framework/router";
  * If this action was a HTTP request, status code for this error would be 400 Bad Request.
  */
 export class BadValuesError extends FormattableError {
-  public readonly HTTP_CODE = 403;
+  public readonly HTTP_CODE = 400;
 }
 
 /**
@@ -30,4 +30,12 @@ export class NotAllowedError extends FormattableError {
  */
 export class NotFoundError extends FormattableError {
   public readonly HTTP_CODE = 404;
+}
+
+/**
+ * Corresponds to an action that attempts to access a resource that doesn't exist.
+ * If this action was a HTTP request, status code for this error would be 422 Unprocessable Entity.
+ */
+export class UnprocessableEntityError extends FormattableError {
+  public readonly HTTP_CODE = 422;
 }

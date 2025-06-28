@@ -1,10 +1,11 @@
+import { Tier } from "concepts/membership";
+
 export type UserRequest = {
   email: string;
   username: string;
   password: string;
   image: string;
   bio: string;
-  token?: string;
   hasPaywall?: boolean;
 };
 
@@ -49,6 +50,19 @@ export type ArticleResponse = {
   author: ProfileResponse;
 };
 
+export type MembershipRequest = {
+  tier: Tier;
+  autoRenew?: boolean;
+};
+
+export type MembershipResponse = {
+  username: string;
+  tier: Tier;
+  renewalDate: string;
+  autoRenew: boolean;
+  totalRevenue: number;
+};
+
 export type ArticlesResponse = {
   articles: Array<ArticleResponse>;
   articlesCount: number;
@@ -69,23 +83,3 @@ export type CommentsResponse = {
 export type TagsResponse = {
   tags: Array<String>;
 };
-
-export enum Tier {
-  Free = "Free",
-  Trial = "Trial",
-  Gold = "Gold",
-}
-
-export type MembershipRequest = {
-  tier: Tier;
-  autoRenew: boolean;
-};
-
-export interface MembershipResponse {
-  username: string;
-  tier: Tier;
-  renewalDate: string;
-  autoRenew: boolean;
-  totalRevenue: number;
-  totalViews: number | null;
-}
