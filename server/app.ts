@@ -12,6 +12,7 @@ import MembershipConcept from "./concepts/membership";
 import PaywallConcept from "./concepts/paywall";
 import ViewConcept from "./concepts/view";
 import RevenueConcept from "./concepts/revenue";
+import SubscriptionConcept from "./concepts/subscription";
 
 // App Definition using concepts
 export const Account = new AccountConcept("account");
@@ -29,3 +30,4 @@ export const Membership = new MembershipConcept("memberships");
 export const Paywall = new PaywallConcept("paywalls");
 export const View = new ViewConcept("views");
 export const Revenue = new RevenueConcept("revenues");
+export const Subscription = new SubscriptionConcept("subscriptions");
