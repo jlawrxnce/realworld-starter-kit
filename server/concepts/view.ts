@@ -2,36 +2,32 @@ import { ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
 
 export interface ViewDoc extends BaseDoc {
-  contentId: ObjectId;
-  viewerId: ObjectId;
+  viewer: ObjectId; // User who viewed the content
+  target: ObjectId; // Content being viewed (article/profile)
   timestamp: Date;
 }
 
 export default class ViewConcept {
   public readonly views: DocCollection<ViewDoc>;
 
-  constructor(collectionName: string) {
-    this.views = new DocCollection<ViewDoc>(collectionName);
+  constructor(name: string) {
+    this.views = new DocCollection<ViewDoc>(name);
   }
 
-  async create(contentId: ObjectId, viewerId: ObjectId) {
-    const existingView = await this.views.readOne({ contentId, viewerId });
-    if (existingView) {
-      return existingView;
+  async create(viewer: ObjectId, target: ObjectId) {
+    const existingView = await this.views.readOne({ viewer, target });
+    if (!existingView) {
+      const _id = await this.views.createOne({ viewer, target, timestamp: new Date() });
+      return await this.views.readOne({ _id });
     }
-    const _id = await this.views.createOne({ contentId, viewerId, timestamp: new Date() });
-    return await this.views.readOne({ _id });
+    return existingView;
   }
 
-  async getViewCount(contentId: ObjectId) {
-    return await this.views.count({ contentId });
+  async getViewCount(target: ObjectId) {
+    return await this.views.count({ target });
   }
 
-  async countByTarget(contentId: ObjectId) {
-    return await this.views.count({ contentId });
-  }
-
-  async getViewsByViewer(viewerId: ObjectId) {
-    return await this.views.readMany({ viewerId });
+  async getViewsByViewer(viewer: ObjectId) {
+    return await this.views.readMany({ viewer });
   }
 }

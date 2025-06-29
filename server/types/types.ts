@@ -1,4 +1,4 @@
-import { Tier } from "concepts/membership";
+import { Tier } from "../concepts/membership";
 
 export type UserRequest = {
   email: string;
@@ -6,7 +6,6 @@ export type UserRequest = {
   password: string;
   image: string;
   bio: string;
-  hasPaywall?: boolean;
 };
 
 export type ArticleRequest = {
@@ -34,20 +33,7 @@ export type ProfileResponse = {
   bio: string;
   image: string;
   following: boolean;
-};
-
-export type ArticleResponse = {
-  slug: string;
-  title: string;
-  description: string;
-  body?: string;
-  tagList: string[];
-  createdAt: string;
-  updatedAt: string;
-  favorited: boolean;
-  favoritesCount: number;
-  hasPaywall: boolean;
-  author: ProfileResponse;
+  hasPaywall?: boolean;
 };
 
 export type MembershipRequest = {
@@ -61,7 +47,20 @@ export type MembershipResponse = {
   renewalDate: string;
   autoRenew: boolean;
   totalRevenue: number;
-  totalViews: number | null;
+};
+
+export type ArticleResponse = {
+  slug: string;
+  title: string;
+  description: string;
+  body?: string;
+  tagList: string[];
+  createdAt: string;
+  updatedAt: string;
+  favorited: boolean;
+  favoritesCount: number;
+  author: ProfileResponse;
+  hasPaywall: boolean;
 };
 
 export type ArticlesResponse = {

@@ -1,55 +1,35 @@
 import { ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
-import { BadValuesError } from "./errors";
-import { Tier } from "./membership";
-
+import { NotFoundError } from "./errors";
 export interface PaywallDoc extends BaseDoc {
-  contentId: ObjectId;
-  enabled: boolean;
-  requiredTier: Tier;
+  contentId: ObjectId; // ID of the content being restricted (e.g. article ID)
+  hasPaywall: boolean;
 }
 
 export default class PaywallConcept {
   public readonly paywalls: DocCollection<PaywallDoc>;
 
-  constructor(collectionName: string) {
-    this.paywalls = new DocCollection<PaywallDoc>(collectionName);
+  constructor(name: string) {
+    this.paywalls = new DocCollection<PaywallDoc>(name);
   }
 
   async create(contentId: ObjectId) {
-    const _id = await this.paywalls.createOne({ contentId, enabled: false, requiredTier: Tier.Gold });
+    const _id = await this.paywalls.createOne({ contentId, hasPaywall: false });
     return await this.paywalls.readOne({ _id });
-  }
-
-  async getByContent(contentId: ObjectId) {
-    const paywall = await this.paywalls.readOne({ contentId });
-    if (!paywall) {
-      const _id = await this.paywalls.createOne({ contentId, enabled: false, requiredTier: Tier.Gold });
-      return await this.paywalls.readOne({ _id });
-    }
-    return paywall;
   }
 
   async toggle(contentId: ObjectId) {
-    const paywall = await this.getByContent(contentId);
-    if (!paywall) {
-      throw new BadValuesError("Paywall not found");
-    }
-    await this.paywalls.deleteOne({ contentId });
-    const _id = await this.paywalls.createOne({ contentId, enabled: !paywall.enabled, requiredTier: Tier.Gold });
-    return await this.paywalls.readOne({ _id });
-  }
-  // This is a placeholder method for the API layer to implement
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getActivePaywallsByOwner(_ownerId: ObjectId) {
-    // This method will be used by the API layer to count active paywalls
-    // The actual implementation will be in the API layer since concepts should not reference other concepts
-    return [];
+    const paywall = (await this.paywalls.readOne({ contentId })) ?? (await this.create(contentId));
+    if (!paywall) throw new NotFoundError("Paywall not found");
+    await this.paywalls.partialUpdateOne({ contentId }, { hasPaywall: !paywall.hasPaywall });
+
+    const updatedPaywall = await this.paywalls.readOne({ contentId });
+    if (!updatedPaywall) throw new NotFoundError("Failed to toggle paywall");
+    return updatedPaywall;
   }
 
-  async isAccessible(contentId: ObjectId, userTier: Tier) {
-    const paywall = await this.getByContent(contentId);
-    if (!paywall || !paywall.enabled) return true;
-    return userTier === paywall.requiredTier;
+  async hasPaywall(contentId: ObjectId) {
+    const paywall = await this.paywalls.readOne({ contentId });
+    return paywall?.hasPaywall ?? false;
   }
 }
