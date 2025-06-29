@@ -1,0 +1,2980 @@
+{
+	"info": {
+		"_postman_id": "d8f8bdff-3b22-42a1-90b3-394e71c68873",
+		"name": "Conduit Phase 3",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "44244577",
+		"_collection_link": "https://www.postman.com/jlawrence6415/conduit-phase-test-cases/collection/96xigkz/conduit-phase-3?action=share&source=collection_link&creator=44244577"
+	},
+	"item": [
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Register free user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"var requestJSON = JSON.parse(pm.request.body);",
+									"",
+									"tests['Response contains \\\"user\\\" property'] = responseJSON.hasOwnProperty('user');",
+									"var user = responseJSON.user;",
+									"",
+									"tests['User has \\\"email\\\" property'] = user.hasOwnProperty('email');",
+									"tests['User has \\\"username\\\" property'] = user.hasOwnProperty('username');",
+									"tests['User has \\\"bio\\\" property'] = user.hasOwnProperty('bio');",
+									"tests['User has \\\"image\\\" property'] = user.hasOwnProperty('image');",
+									"tests['User has \\\"token\\\" property'] = user.hasOwnProperty('token');",
+									"",
+									"pm.test('Email, username, and bio match input', () => {",
+									"  pm.expect(user.email).to.equal(requestJSON.user.email)",
+									"  pm.expect(user.username).to.equal(requestJSON.user.username);",
+									"  pm.expect(user.bio).to.equal(null);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user\": {\n    \"email\": \"free_user@gmail.com\",\n    \"password\": \"free\",\n    \"username\": \"free_user\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/users",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register gold user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"var requestJSON = JSON.parse(pm.request.body);",
+									"",
+									"tests['Response contains \\\"user\\\" property'] = responseJSON.hasOwnProperty('user');",
+									"var user = responseJSON.user;",
+									"",
+									"tests['User has \\\"email\\\" property'] = user.hasOwnProperty('email');",
+									"tests['User has \\\"username\\\" property'] = user.hasOwnProperty('username');",
+									"tests['User has \\\"bio\\\" property'] = user.hasOwnProperty('bio');",
+									"tests['User has \\\"image\\\" property'] = user.hasOwnProperty('image');",
+									"tests['User has \\\"token\\\" property'] = user.hasOwnProperty('token');",
+									"",
+									"pm.test('Email, username, and bio match input', () => {",
+									"  pm.expect(user.email).to.equal(requestJSON.user.email)",
+									"  pm.expect(user.username).to.equal(requestJSON.user.username);",
+									"  pm.expect(user.bio).to.equal(null);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user\": {\n    \"email\": \"gold_user@gmail.com\",\n    \"password\": \"gold\",\n    \"username\": \"gold_user\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/users",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register trial user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"var requestJSON = JSON.parse(pm.request.body);",
+									"",
+									"tests['Response contains \\\"user\\\" property'] = responseJSON.hasOwnProperty('user');",
+									"var user = responseJSON.user;",
+									"",
+									"tests['User has \\\"email\\\" property'] = user.hasOwnProperty('email');",
+									"tests['User has \\\"username\\\" property'] = user.hasOwnProperty('username');",
+									"tests['User has \\\"bio\\\" property'] = user.hasOwnProperty('bio');",
+									"tests['User has \\\"image\\\" property'] = user.hasOwnProperty('image');",
+									"tests['User has \\\"token\\\" property'] = user.hasOwnProperty('token');",
+									"",
+									"pm.test('Email, username, and bio match input', () => {",
+									"  pm.expect(user.email).to.equal(requestJSON.user.email)",
+									"  pm.expect(user.username).to.equal(requestJSON.user.username);",
+									"  pm.expect(user.bio).to.equal(null);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user\": {\n    \"email\": \"trial_user@gmail.com\",\n    \"password\": \"trial\",\n    \"username\": \"trial_user\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/users",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login free user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"var requestJSON = JSON.parse(pm.request.body);",
+									"",
+									"tests['Response contains \\\"user\\\" property'] = responseJSON.hasOwnProperty('user');",
+									"var user = responseJSON.user;",
+									"",
+									"tests['User has \\\"email\\\" property'] = user.hasOwnProperty('email');",
+									"tests['User has \\\"username\\\" property'] = user.hasOwnProperty('username');",
+									"tests['User has \\\"bio\\\" property'] = user.hasOwnProperty('bio');",
+									"tests['User has \\\"image\\\" property'] = user.hasOwnProperty('image');",
+									"tests['User has \\\"token\\\" property'] = user.hasOwnProperty('token');",
+									"",
+									"pm.test('Email, username, bio match input', () => {",
+									"  pm.expect(user.email).to.equal(requestJSON.user.email);",
+									"  pm.expect(user.username).to.equal(\"free_user\");",
+									"  pm.expect(user.bio).to.equal(null);",
+									"});",
+									"",
+									"pm.globals.set(\"free_token\", user.token);",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user\": {\n    \"email\": \"free_user@gmail.com\",\n    \"password\": \"free\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/users/login",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"users",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login gold user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"var requestJSON = JSON.parse(pm.request.body);",
+									"",
+									"tests['Response contains \\\"user\\\" property'] = responseJSON.hasOwnProperty('user');",
+									"var user = responseJSON.user;",
+									"",
+									"tests['User has \\\"email\\\" property'] = user.hasOwnProperty('email');",
+									"tests['User has \\\"username\\\" property'] = user.hasOwnProperty('username');",
+									"tests['User has \\\"bio\\\" property'] = user.hasOwnProperty('bio');",
+									"tests['User has \\\"image\\\" property'] = user.hasOwnProperty('image');",
+									"tests['User has \\\"token\\\" property'] = user.hasOwnProperty('token');",
+									"",
+									"pm.test('Email, username, bio match input', () => {",
+									"  pm.expect(user.email).to.equal(requestJSON.user.email);",
+									"  pm.expect(user.username).to.equal(\"gold_user\");",
+									"  pm.expect(user.bio).to.equal(null);",
+									"});",
+									"",
+									"pm.globals.set(\"gold_token\", user.token);",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user\": {\n    \"email\": \"gold_user@gmail.com\",\n    \"password\": \"gold\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/users/login",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"users",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login trial user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"var requestJSON = JSON.parse(pm.request.body);",
+									"",
+									"tests['Response contains \\\"user\\\" property'] = responseJSON.hasOwnProperty('user');",
+									"var user = responseJSON.user;",
+									"",
+									"tests['User has \\\"email\\\" property'] = user.hasOwnProperty('email');",
+									"tests['User has \\\"username\\\" property'] = user.hasOwnProperty('username');",
+									"tests['User has \\\"bio\\\" property'] = user.hasOwnProperty('bio');",
+									"tests['User has \\\"image\\\" property'] = user.hasOwnProperty('image');",
+									"tests['User has \\\"token\\\" property'] = user.hasOwnProperty('token');",
+									"",
+									"pm.test('Email, username, bio match input', () => {",
+									"  pm.expect(user.email).to.equal(requestJSON.user.email);",
+									"  pm.expect(user.username).to.equal(\"trial_user\");",
+									"  pm.expect(user.bio).to.equal(null);",
+									"});",
+									"",
+									"pm.globals.set(\"trial_token\", user.token);",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user\": {\n    \"email\": \"trial_user@gmail.com\",\n    \"password\": \"trial\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/users/login",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"users",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Membership",
+			"item": [
+				{
+					"name": "Gold user activates gold membership",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"membership\\\" property'] = responseJSON.hasOwnProperty('membership');",
+									"var membership = responseJSON.membership;",
+									"",
+									"",
+									"tests['Membership has \\\"username\\\" property'] = membership.hasOwnProperty('username');",
+									"tests['Membership has \\\"tier\\\" property'] = membership.hasOwnProperty('tier');",
+									"tests['Membership has \\\"renewalDate\\\" property'] = membership.hasOwnProperty('renewalDate');",
+									"tests['Membership has \\\"autoRenew\\\" property'] = membership.hasOwnProperty('autoRenew');",
+									"tests['Membership has \\\"totalRevenue\\\" property'] = membership.hasOwnProperty('totalRevenue');",
+									"tests['Membership has \\\"totalViews\\\" property'] = membership.hasOwnProperty('totalViews');",
+									"",
+									"pm.globals.set(\"gold_renew\", membership.renewalDate)",
+									"",
+									"pm.test('autoRenew match expected', () => {",
+									"    pm.expect(membership.autoRenew).to.equal(false);",
+									"});",
+									"pm.test('username match expected', () => {",
+									"    pm.expect(membership.username).to.equal(\"gold_user\");",
+									"});",
+									"pm.test('tier match expected', () => {",
+									"    pm.expect(membership.tier).to.equal(\"Gold\");",
+									"});",
+									"pm.test('renewalDate match expected', () => {",
+									"    var expected = new Date();",
+									"    var actual = new Date(membership.renewalDate);",
+									"    expected.setMonth(expected.getMonth() + 1);",
+									"",
+									"    pm.expect(actual.getUTCDate()).to.equal(expected.getUTCDate());",
+									"    pm.expect(actual.getUTCMonth()).to.equal(expected.getUTCMonth());",
+									"    pm.expect(actual.getUTCFullYear()).to.equal(expected.getUTCFullYear());",
+									"});",
+									"pm.test('totalRevenue match expected', () => {",
+									"    pm.expect(membership.totalRevenue).to.equal(0);",
+									"});",
+									"",
+									"pm.test('totalViews match expected', () => {",
+									"    pm.expect(membership.totalViews).to.equal(0);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{gold_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"membership\": {\n    \"tier\": \"Gold\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/membership",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"membership"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial user activates trial membership",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"membership\\\" property'] = responseJSON.hasOwnProperty('membership');",
+									"var membership = responseJSON.membership;",
+									"",
+									"tests['Membership has \\\"username\\\" property'] = membership.hasOwnProperty('username');",
+									"tests['Membership has \\\"tier\\\" property'] = membership.hasOwnProperty('tier');",
+									"tests['Membership has \\\"renewalDate\\\" property'] = membership.hasOwnProperty('renewalDate');",
+									"tests['Membership has \\\"autoRenew\\\" property'] = membership.hasOwnProperty('autoRenew');",
+									"tests['Membership has \\\"totalRevenue\\\" property'] = membership.hasOwnProperty('totalRevenue');",
+									"tests['Membership has \\\"totalViews\\\" property'] = membership.hasOwnProperty('totalViews');",
+									"",
+									"pm.globals.set(\"trial_renew\", membership.renewalDate)",
+									"",
+									"pm.test('autoRenew match expected', () => {",
+									"    pm.expect(membership.autoRenew).to.equal(false);",
+									"});",
+									"pm.test('username match expected', () => {",
+									"    pm.expect(membership.username).to.equal(\"trial_user\");",
+									"});",
+									"pm.test('tier match expected', () => {",
+									"    pm.expect(membership.tier).to.equal(\"Trial\");",
+									"});",
+									"pm.test('renewalDate match expected', () => {",
+									"    var expected = new Date();",
+									"    var actual = new Date(membership.renewalDate);",
+									"    expected.setDate(expected.getDate() + 7);",
+									"",
+									"    pm.expect(actual.getUTCDate()).to.equal(expected.getUTCDate());",
+									"    pm.expect(actual.getUTCMonth()).to.equal(expected.getUTCMonth());",
+									"    pm.expect(actual.getUTCFullYear()).to.equal(expected.getUTCFullYear());",
+									"});",
+									"pm.test('totalRevenue match expected', () => {",
+									"    pm.expect(membership.totalRevenue).to.equal(0);",
+									"});",
+									"",
+									"pm.test('totalViews match expected', () => {",
+									"    pm.expect(membership.totalViews).to.equal(0);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"membership\": {\n    \"tier\": \"Trial\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/membership",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"membership"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Article",
+			"item": [
+				{
+					"name": "Free Member creates article",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var requestJSON = JSON.parse(pm.request.body);",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"pm.globals.set(\"free_slug\", article.slug)",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(requestJSON.article.title);",
+									"});",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(requestJSON.article.description);",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set(requestJSON.article.tagList));",
+									"",
+									"});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(false);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{free_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"article\": {\n    \"body\": \"This is a free article. Anyone can access it.\",\n    \"description\": \"Free for all\",\n    \"title\": \"Free Article\",\n    \"tagList\": [\n      \"Free\"\n    ]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/articles",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Gold Member creates article",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"var requestJSON = JSON.parse(pm.request.body);",
+									"",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"pm.globals.set(\"gold_slug\", article.slug)",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(\"Gold Article\");",
+									"});",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(\"Gold members only\");",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set([",
+									"        \"Gold\",",
+									"        \"Paywall\"",
+									"    ]))});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(false);});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{gold_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"article\": {\n    \"body\": \"This is a paywalled article. Only gold members can access it.\",\n    \"description\": \"Gold members only\",\n    \"title\": \"Gold Article\",\n    \"tagList\": [\n      \"Gold\",\n      \"Paywall\"\n    ]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/articles",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial Member creates article 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var requestJSON = JSON.parse(pm.request.body);",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"pm.globals.set(\"trial_slug_1\", article.slug)",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(requestJSON.article.title);",
+									"});",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(requestJSON.article.description);",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set(requestJSON.article.tagList));",
+									"",
+									"});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(false);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"article\": {\n    \"body\": \"This is a paywalled article. Only members can access it.\",\n    \"description\": \"Members only\",\n    \"title\": \"Trial Article 1\",\n    \"tagList\": [\n      \"Trial\",\n      \"Paywall\", \n      \"1\"\n    ]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/articles",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial Member creates article 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var requestJSON = JSON.parse(pm.request.body);",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"pm.globals.set(\"trial_slug_2\", article.slug)",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(requestJSON.article.title);",
+									"});",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(requestJSON.article.description);",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set(requestJSON.article.tagList));",
+									"",
+									"});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(false);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"article\": {\n    \"body\": \"This is a paywalled article. Only members can access it.\",\n    \"description\": \"Members only\",\n    \"title\": \"Trial Article 2\",\n    \"tagList\": [\n      \"Trial\",\n      \"Paywall\", \n      \"2\"\n    ]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/articles",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial Member creates article 3",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var requestJSON = JSON.parse(pm.request.body);",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"pm.globals.set(\"trial_slug_3\", article.slug)",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(requestJSON.article.title);",
+									"});",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(requestJSON.article.description);",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set(requestJSON.article.tagList));",
+									"",
+									"});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(false);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"article\": {\n    \"body\": \"This is a paywalled article. Only members can access it.\",\n    \"description\": \"Members only\",\n    \"title\": \"Trial Article 3\",\n    \"tagList\": [\n      \"Trial\",\n      \"Paywall\", \n      \"3\"\n    ]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/articles",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial Member creates article 4",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var requestJSON = JSON.parse(pm.request.body);",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"pm.globals.set(\"trial_slug_4\", article.slug)",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(requestJSON.article.title);",
+									"});",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(requestJSON.article.description);",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set(requestJSON.article.tagList));",
+									"",
+									"});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(false);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"article\": {\n    \"body\": \"This is a paywalled article. Only members can access it.\",\n    \"description\": \"Members only\",\n    \"title\": \"Trial Article 4\",\n    \"tagList\": [\n      \"Trial\",\n      \"Paywall\", \n      \"4\"\n    ]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/articles",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Phase 2 - Views",
+			"item": [
+				{
+					"name": "Free views Trial no paywall",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"tests['Article has \\\"hasPaywall\\\" property'] = article.hasOwnProperty('hasPaywall');",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(\"Trial Article 1\");",
+									"});",
+									"",
+									"tests['Article has \\\"author\\\" property'] = article.hasOwnProperty('author');",
+									"pm.test('article author properties expected', () => {",
+									"    pm.expect(article.author.username).to.equal(\"trial_user\");",
+									"    pm.expect(article.author.following).to.equal(false);",
+									"});",
+									"",
+									"",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(\"Members only\");",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set([",
+									"        \"Trial\",",
+									"        \"Paywall\",",
+									"        \"1\"",
+									"    ]));",
+									"",
+									"});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(false);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{free_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/articles/:slug/view",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles",
+								":slug",
+								"view"
+							],
+							"variable": [
+								{
+									"key": "slug",
+									"value": "{{trial_slug_1}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial Member toggles paywall article 1",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(\"Trial Article 1\");",
+									"});",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(\"Members only\");",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set([",
+									"        \"Trial\",",
+									"        \"Paywall\",",
+									"        \"1\"",
+									"    ]));",
+									"",
+									"});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(true);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/articles/:slug/paywall",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles",
+								":slug",
+								"paywall"
+							],
+							"variable": [
+								{
+									"key": "slug",
+									"value": "{{trial_slug_1}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial Member toggles paywall article 2",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(\"Trial Article 2\");",
+									"});",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(\"Members only\");",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set([",
+									"        \"Trial\",",
+									"        \"Paywall\",",
+									"        \"2\"",
+									"    ]));",
+									"",
+									"});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(true);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/articles/:slug/paywall",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles",
+								":slug",
+								"paywall"
+							],
+							"variable": [
+								{
+									"key": "slug",
+									"value": "{{trial_slug_2}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Gold Member toggles article paywall Copy",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"pm.globals.set(\"gold_slug\", article.slug)",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(\"Gold Article\");",
+									"});",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(\"Gold members only\");",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set([",
+									"        \"Gold\",",
+									"        \"Paywall\"",
+									"    ]));",
+									"",
+									"});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(true);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{gold_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/articles/:slug/paywall",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles",
+								":slug",
+								"paywall"
+							],
+							"variable": [
+								{
+									"key": "slug",
+									"value": "{{gold_slug}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial views Free",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"tests['Article has \\\"hasPaywall\\\" property'] = article.hasOwnProperty('hasPaywall');",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(\"Free Article\");",
+									"});",
+									"",
+									"tests['Article has \\\"author\\\" property'] = article.hasOwnProperty('author');",
+									"pm.test('article author properties expected', () => {",
+									"    pm.expect(article.author.username).to.equal(\"free_user\");",
+									"    pm.expect(article.author.following).to.equal(false);",
+									"});",
+									"",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(\"Free for all\");",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set([",
+									"        \"Free\"",
+									"    ]));",
+									"",
+									"});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(false);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/articles/:slug/view",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles",
+								":slug",
+								"view"
+							],
+							"variable": [
+								{
+									"key": "slug",
+									"value": "{{free_slug}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial views Trial",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"tests['Article has \\\"hasPaywall\\\" property'] = article.hasOwnProperty('hasPaywall');",
+									"",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(\"Trial Article 1\");",
+									"    ",
+									"});",
+									"",
+									"tests['Article has \\\"author\\\" property'] = article.hasOwnProperty('author');",
+									"pm.test('article author properties expected', () => {",
+									"    pm.expect(article.author.username).to.equal(\"trial_user\");",
+									"});",
+									"",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(\"Members only\");",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set([",
+									"        \"Trial\",",
+									"        \"Paywall\",",
+									"        \"1\"",
+									"    ]));",
+									"",
+									"});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(true);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/articles/:slug/view",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles",
+								":slug",
+								"view"
+							],
+							"variable": [
+								{
+									"key": "slug",
+									"value": "{{trial_slug_1}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial views Gold",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"tests['Article has \\\"hasPaywall\\\" property'] = article.hasOwnProperty('hasPaywall');",
+									"",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(\"Gold Article\");",
+									"});",
+									"",
+									"tests['Article has \\\"author\\\" property'] = article.hasOwnProperty('author');",
+									"pm.test('article author properties expected', () => {",
+									"    pm.expect(article.author.username).to.equal(\"gold_user\");",
+									"    pm.expect(article.author.following).to.equal(false);",
+									"});",
+									"",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(\"Gold members only\");",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set([",
+									"        \"Gold\",",
+									"        \"Paywall\"",
+									"    ]));",
+									"",
+									"});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(true);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/articles/:slug/view",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles",
+								":slug",
+								"view"
+							],
+							"variable": [
+								{
+									"key": "slug",
+									"value": "{{gold_slug}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Gold views Trial",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"tests['Article has \\\"hasPaywall\\\" property'] = article.hasOwnProperty('hasPaywall');",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(\"Trial Article 2\");",
+									"});",
+									"",
+									"tests['Article has \\\"author\\\" property'] = article.hasOwnProperty('author');",
+									"pm.test('article author properties expected', () => {",
+									"    pm.expect(article.author.username).to.equal(\"trial_user\");",
+									"    pm.expect(article.author.following).to.equal(false);",
+									"});",
+									"",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(\"Members only\");",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set([",
+									"        \"Trial\",",
+									"        \"Paywall\"",
+									"        ,\"2\"",
+									"    ]));",
+									"",
+									"});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(true);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{gold_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/articles/:slug/view",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles",
+								":slug",
+								"view"
+							],
+							"variable": [
+								{
+									"key": "slug",
+									"value": "{{trial_slug_2}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Free views Trial paywall",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 403\", function () {",
+									"    pm.response.to.have.status(403);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{free_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/articles/:slug/view",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles",
+								":slug",
+								"view"
+							],
+							"variable": [
+								{
+									"key": "slug",
+									"value": "{{trial_slug_1}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Paywalls",
+			"item": [
+				{
+					"name": "Trial Member toggles paywall article 3",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"article\\\" property'] = responseJSON.hasOwnProperty('article');",
+									"",
+									"var article = responseJSON.article",
+									"tests['Article has \\\"slug\\\" property'] = article.hasOwnProperty('slug');",
+									"",
+									"",
+									"pm.test('article title expected', () => {",
+									"    pm.expect(article.title).to.equal(\"Trial Article 3\");",
+									"});",
+									"pm.test('article description expected', () => {",
+									"    pm.expect(article.description).to.equal(\"Members only\");",
+									"});",
+									"pm.test('article tagList expected', () => {",
+									"    pm.expect(new Set(article.tagList)).to.deep.equal(new Set([",
+									"        \"Trial\",",
+									"        \"Paywall\",",
+									"        \"3\"",
+									"    ]));",
+									"",
+									"});",
+									"pm.test('article paywall expected', () => {",
+									"   pm.expect(article.hasPaywall).to.equal(true);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/articles/:slug/paywall",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles",
+								":slug",
+								"paywall"
+							],
+							"variable": [
+								{
+									"key": "slug",
+									"value": "{{trial_slug_3}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial Member toggles paywall article 4",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Throws a 403\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([403]);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/articles/:slug/paywall",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"articles",
+								":slug",
+								"paywall"
+							],
+							"variable": [
+								{
+									"key": "slug",
+									"value": "{{trial_slug_4}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Phase 2 - Profile",
+			"item": [
+				{
+					"name": "Free Member gets Gold Profile no paywall",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"profile\\\" property'] = responseJSON.hasOwnProperty('profile');",
+									"var profile = responseJSON.profile;",
+									"",
+									"tests['Profile has \\\"username\\\" property'] = profile.hasOwnProperty('username');",
+									"tests['Profile has \\\"bio\\\" property'] = profile.hasOwnProperty('bio');",
+									"tests['Profile has \\\"image\\\" property'] = profile.hasOwnProperty('image');",
+									"tests['Profile has \\\"following\\\" property'] = profile.hasOwnProperty('following');",
+									"tests['Profile has \\\"hasPaywall\\\" property'] = profile.hasOwnProperty('hasPaywall');",
+									"",
+									"pm.test('Profile fields match input', () => {",
+									"  pm.expect(profile.username).to.equal(\"gold_user\")",
+									"});",
+									"",
+									"pm.test('Profile hasPaywall matches input', () => {",
+									"  pm.expect(profile.hasPaywall).to.equal(false)",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{free_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/profiles/:username",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"profiles",
+								":username"
+							],
+							"variable": [
+								{
+									"key": "username",
+									"value": "gold_user"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Gold Member toggles Profile Paywall",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"user\\\" property'] = responseJSON.hasOwnProperty('user');",
+									"var user = responseJSON.user;",
+									"",
+									"tests['User has \\\"email\\\" property'] = user.hasOwnProperty('email');",
+									"tests['User has \\\"username\\\" property'] = user.hasOwnProperty('username');",
+									"tests['User has \\\"bio\\\" property'] = user.hasOwnProperty('bio');",
+									"tests['User has \\\"image\\\" property'] = user.hasOwnProperty('image');",
+									"tests['User has \\\"token\\\" property'] = user.hasOwnProperty('token');",
+									"",
+									"",
+									"pm.test('Email, username, and bio match input', () => {",
+									"  pm.expect(user.email).to.equal(\"gold_user@gmail.com\")",
+									"  pm.expect(user.username).to.equal(\"gold_user\");",
+									"  pm.expect(user.bio).to.equal(null);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{gold_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user\": {\n    \"hasPaywall\": true\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/user",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Free follow Gold User paywall",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 403\", function () {",
+									"    pm.response.to.have.status(403);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{free_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/profiles/:username/follow",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"profiles",
+								":username",
+								"follow"
+							],
+							"variable": [
+								{
+									"key": "username",
+									"value": "gold_user"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial Member gets Gold Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"profile\\\" property'] = responseJSON.hasOwnProperty('profile');",
+									"var profile = responseJSON.profile;",
+									"",
+									"tests['Profile has \\\"username\\\" property'] = profile.hasOwnProperty('username');",
+									"tests['Profile has \\\"bio\\\" property'] = profile.hasOwnProperty('bio');",
+									"tests['Profile has \\\"image\\\" property'] = profile.hasOwnProperty('image');",
+									"tests['Profile has \\\"following\\\" property'] = profile.hasOwnProperty('following');",
+									"tests['Profile has \\\"hasPaywall\\\" property'] = profile.hasOwnProperty('hasPaywall');",
+									"",
+									"pm.test('Profile fields match input', () => {",
+									"  pm.expect(profile.username).to.equal(\"gold_user\")",
+									"  pm.expect(profile.following).to.equal(false);",
+									"});",
+									"",
+									"pm.test('Profile hasPaywall matches input', () => {",
+									"  pm.expect(profile.hasPaywall).to.equal(true)",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/profiles/:username",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"profiles",
+								":username"
+							],
+							"variable": [
+								{
+									"key": "username",
+									"value": "gold_user"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Free Member gets Gold Profile paywall",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 403\", function () {",
+									"    pm.response.to.have.status(403);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{free_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/profiles/:username",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"profiles",
+								":username"
+							],
+							"variable": [
+								{
+									"key": "username",
+									"value": "gold_user"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Membership (2)",
+			"item": [
+				{
+					"name": "Gold member gets membership",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"membership\\\" property'] = responseJSON.hasOwnProperty('membership');",
+									"var membership = responseJSON.membership;",
+									"",
+									"tests['Membership has \\\"username\\\" property'] = membership.hasOwnProperty('username');",
+									"tests['Membership has \\\"tier\\\" property'] = membership.hasOwnProperty('tier');",
+									"tests['Membership has \\\"renewalDate\\\" property'] = membership.hasOwnProperty('renewalDate');",
+									"tests['Membership has \\\"autoRenew\\\" property'] = membership.hasOwnProperty('autoRenew');",
+									"tests['Membership has \\\"totalRevenue\\\" property'] = membership.hasOwnProperty('totalRevenue');",
+									"tests['Membership has \\\"totalViews\\\" property'] = membership.hasOwnProperty('totalViews');",
+									"",
+									"pm.test('autoRenew match expected', () => {",
+									"    pm.expect(membership.autoRenew).to.equal(false);",
+									"});",
+									"pm.test('username match expected', () => {",
+									"    pm.expect(membership.username).to.equal(\"gold_user\");",
+									"});",
+									"pm.test('tier match expected', () => {",
+									"    pm.expect(membership.tier).to.equal(\"Gold\");",
+									"});",
+									"pm.test('renewalDate match expected', () => {",
+									"    var expected = new Date();",
+									"    var actual = new Date(membership.renewalDate);",
+									"    expected.setMonth(expected.getMonth() + 1);",
+									"",
+									"    pm.expect(actual.getUTCDate()).to.equal(expected.getUTCDate());",
+									"    pm.expect(actual.getUTCMonth()).to.equal(expected.getUTCMonth());",
+									"    pm.expect(actual.getUTCFullYear()).to.equal(expected.getUTCFullYear());",
+									"});",
+									"pm.test('totalRevenue match expected', () => {",
+									"    pm.expect(membership.totalRevenue).to.equal(0.25);",
+									"});",
+									"",
+									"pm.test('totalViews match expected', () => {",
+									"    pm.expect(membership.totalViews).to.equal(1);",
+									"});",
+									"",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{gold_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/membership",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"membership"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial member gets membership",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"membership\\\" property'] = responseJSON.hasOwnProperty('membership');",
+									"var membership = responseJSON.membership;",
+									"",
+									"tests['Membership has \\\"username\\\" property'] = membership.hasOwnProperty('username');",
+									"tests['Membership has \\\"tier\\\" property'] = membership.hasOwnProperty('tier');",
+									"tests['Membership has \\\"renewalDate\\\" property'] = membership.hasOwnProperty('renewalDate');",
+									"tests['Membership has \\\"autoRenew\\\" property'] = membership.hasOwnProperty('autoRenew');",
+									"tests['Membership has \\\"totalRevenue\\\" property'] = membership.hasOwnProperty('totalRevenue');",
+									"tests['Membership has \\\"totalViews\\\" property'] = membership.hasOwnProperty('totalViews');",
+									"",
+									"pm.test('autoRenew match expected', () => {",
+									"    pm.expect(membership.autoRenew).to.equal(false);",
+									"});",
+									"pm.test('username match expected', () => {",
+									"    pm.expect(membership.username).to.equal(\"trial_user\");",
+									"});",
+									"pm.test('tier match expected', () => {",
+									"    pm.expect(membership.tier).to.equal(\"Trial\");",
+									"});",
+									"pm.test('renewalDate match expected', () => {",
+									"    var expected = new Date();",
+									"    var actual = new Date(membership.renewalDate);",
+									"    expected.setDate(expected.getDate() + 7);",
+									"",
+									"    pm.expect(actual.getUTCDate()).to.equal(expected.getUTCDate());",
+									"    pm.expect(actual.getUTCMonth()).to.equal(expected.getUTCMonth());",
+									"    pm.expect(actual.getUTCFullYear()).to.equal(expected.getUTCFullYear());",
+									"});",
+									"pm.test('totalRevenue match expected', () => {",
+									"    pm.expect(membership.totalRevenue).to.equal(0.50);",
+									"});",
+									"",
+									"pm.test('totalViews match expected', () => {",
+									"    pm.expect(membership.totalViews).to.equal(3);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/membership",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"membership"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Free member gets membership",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"membership\\\" property'] = responseJSON.hasOwnProperty('membership');",
+									"var membership = responseJSON.membership;",
+									"",
+									"tests['Membership has \\\"username\\\" property'] = membership.hasOwnProperty('username');",
+									"tests['Membership has \\\"tier\\\" property'] = membership.hasOwnProperty('tier');",
+									"tests['Membership has \\\"renewalDate\\\" property'] = membership.hasOwnProperty('renewalDate');",
+									"tests['Membership has \\\"autoRenew\\\" property'] = membership.hasOwnProperty('autoRenew');",
+									"tests['Membership has \\\"totalRevenue\\\" property'] = membership.hasOwnProperty('totalRevenue');",
+									"tests['Membership has \\\"totalViews\\\" property'] = membership.hasOwnProperty('totalViews');",
+									"",
+									"pm.test('autoRenew match expected', () => {",
+									"    pm.expect(membership.autoRenew).to.equal(false);",
+									"});",
+									"pm.test('username match expected', () => {",
+									"    pm.expect(membership.username).to.equal(\"free_user\");",
+									"});",
+									"pm.test('tier match expected', () => {",
+									"    pm.expect(membership.tier).to.equal(\"Free\");",
+									"});",
+									"pm.test('renewalDate match expected', () => {",
+									"    var expected = new Date();",
+									"    var actual = new Date(membership.renewalDate);",
+									"    expected.setMonth(expected.getMonth());",
+									"",
+									"    pm.expect(actual.getUTCDate()).to.equal(expected.getUTCDate());",
+									"    pm.expect(actual.getUTCMonth()).to.equal(expected.getUTCMonth());",
+									"    pm.expect(actual.getUTCFullYear()).to.equal(expected.getUTCFullYear());",
+									"});",
+									"pm.test('totalRevenue match expected', () => {",
+									"    pm.expect(membership.totalRevenue).to.equal(0);",
+									"});",
+									"pm.test('totalViews match expected', () => {",
+									"    pm.expect(membership.totalViews).to.equal(null)",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{free_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/membership",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"membership"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Renewal",
+			"item": [
+				{
+					"name": "Gold renews 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"membership\\\" property'] = responseJSON.hasOwnProperty('membership');",
+									"var membership = responseJSON.membership;",
+									"",
+									"tests['Membership has \\\"username\\\" property'] = membership.hasOwnProperty('username');",
+									"tests['Membership has \\\"tier\\\" property'] = membership.hasOwnProperty('tier');",
+									"tests['Membership has \\\"renewalDate\\\" property'] = membership.hasOwnProperty('renewalDate');",
+									"tests['Membership has \\\"autoRenew\\\" property'] = membership.hasOwnProperty('autoRenew');",
+									"tests['Membership has \\\"totalRevenue\\\" property'] = membership.hasOwnProperty('totalRevenue');",
+									"tests['Membership has \\\"totalViews\\\" property'] = membership.hasOwnProperty('totalViews');",
+									"",
+									"pm.test('autoRenew match expected', () => {",
+									"    pm.expect(membership.autoRenew).to.equal(false);",
+									"});",
+									"pm.test('username match expected', () => {",
+									"    pm.expect(membership.username).to.equal(\"gold_user\");",
+									"});",
+									"pm.test('tier match expected', () => {",
+									"    pm.expect(membership.tier).to.equal(\"Gold\");",
+									"});",
+									"pm.test('renewalDate match expected', () => {",
+									"    var expected = new Date(pm.globals.get('gold_renew'));",
+									"    var actual = new Date(membership.renewalDate);",
+									"    expected.setDate(expected.getDate() + 30);",
+									"",
+									"    pm.expect(actual.getUTCDate()).to.equal(expected.getUTCDate());",
+									"    pm.expect(actual.getUTCMonth()).to.equal(expected.getUTCMonth());",
+									"    pm.expect(actual.getUTCFullYear()).to.equal(expected.getUTCFullYear());",
+									"});",
+									"",
+									"pm.globals.set('gold_renew', membership.renewalDate);",
+									"",
+									"pm.test('totalRevenue match expected', () => {",
+									"    pm.expect(membership.totalRevenue).to.equal(0.25);",
+									"});",
+									"",
+									"pm.test('totalViews match expected', () => {",
+									"    pm.expect(membership.totalViews).to.equal(1);",
+									"});",
+									"",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{gold_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/membership/renew",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"membership",
+								"renew"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Gold renews 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"403 POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([403]);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{gold_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/membership/renew",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"membership",
+								"renew"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Free renews",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"403 POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([403]);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{free_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/membership/renew",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"membership",
+								"renew"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial renews to gold",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"membership\\\" property'] = responseJSON.hasOwnProperty('membership');",
+									"var membership = responseJSON.membership;",
+									"",
+									"tests['Membership has \\\"username\\\" property'] = membership.hasOwnProperty('username');",
+									"tests['Membership has \\\"tier\\\" property'] = membership.hasOwnProperty('tier');",
+									"tests['Membership has \\\"renewalDate\\\" property'] = membership.hasOwnProperty('renewalDate');",
+									"tests['Membership has \\\"autoRenew\\\" property'] = membership.hasOwnProperty('autoRenew');",
+									"tests['Membership has \\\"totalRevenue\\\" property'] = membership.hasOwnProperty('totalRevenue');",
+									"tests['Membership has \\\"totalViews\\\" property'] = membership.hasOwnProperty('totalViews');",
+									"",
+									"pm.test('autoRenew match expected', () => {",
+									"    pm.expect(membership.autoRenew).to.equal(false);",
+									"});",
+									"pm.test('username match expected', () => {",
+									"    pm.expect(membership.username).to.equal(\"trial_user\");",
+									"});",
+									"pm.test('tier match expected', () => {",
+									"    pm.expect(membership.tier).to.equal(\"Gold\");",
+									"});",
+									"pm.test('renewalDate match expected', () => {",
+									"    var expected = new Date(pm.globals.get(\"trial_renew\"));",
+									"    var actual = new Date(membership.renewalDate);",
+									"    expected.setDate(expected.getDate() + 30);",
+									"",
+									"    pm.expect(actual.getUTCDate()).to.equal(expected.getUTCDate());",
+									"    pm.expect(actual.getUTCMonth()).to.equal(expected.getUTCMonth());",
+									"    pm.expect(actual.getUTCFullYear()).to.equal(expected.getUTCFullYear());",
+									"});",
+									"pm.test('totalRevenue match expected', () => {",
+									"    pm.expect(membership.totalRevenue).to.equal(0.50);",
+									"});",
+									"",
+									"pm.test('totalViews match expected', () => {",
+									"    pm.expect(membership.totalViews).to.equal(3);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{trial_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{APIURL}}/membership/renew",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"membership",
+								"renew"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Updates",
+			"item": [
+				{
+					"name": "Gold member updates membership autorenew",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"membership\\\" property'] = responseJSON.hasOwnProperty('membership');",
+									"var membership = responseJSON.membership;",
+									"",
+									"tests['Membership has \\\"username\\\" property'] = membership.hasOwnProperty('username');",
+									"tests['Membership has \\\"tier\\\" property'] = membership.hasOwnProperty('tier');",
+									"tests['Membership has \\\"renewalDate\\\" property'] = membership.hasOwnProperty('renewalDate');",
+									"tests['Membership has \\\"autoRenew\\\" property'] = membership.hasOwnProperty('autoRenew');",
+									"",
+									"pm.test('autoRenew match expected', () => {",
+									"    pm.expect(membership.autoRenew).to.equal(true);",
+									"});",
+									"pm.test('username match expected', () => {",
+									"    pm.expect(membership.username).to.equal(\"gold_user\");",
+									"});",
+									"pm.test('tier match expected', () => {",
+									"    pm.expect(membership.tier).to.equal(\"Gold\");",
+									"});",
+									"pm.test('renewalDate match expected', () => {",
+									"    var expected = new Date(pm.globals.get('gold_renew'));",
+									"    var actual = new Date(membership.renewalDate);",
+									"",
+									"    pm.expect(actual.getUTCDate()).to.equal(expected.getUTCDate());",
+									"    pm.expect(actual.getUTCMonth()).to.equal(expected.getUTCMonth());",
+									"    pm.expect(actual.getUTCFullYear()).to.equal(expected.getUTCFullYear());",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{gold_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"membership\": {\n    \"autoRenew\": true\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/membership",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"membership"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Gold updates membership Trial",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"422, 403 POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([422, 403]);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{gold_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"membership\": {\n    \"tier\": \"Trial\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/membership",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"membership"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Gold updates membership Free",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful POST request\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+									"});",
+									"",
+									"var responseJSON = JSON.parse(pm.response.text());",
+									"",
+									"tests['Response contains \\\"membership\\\" property'] = responseJSON.hasOwnProperty('membership');",
+									"var membership = responseJSON.membership;",
+									"",
+									"tests['Membership has \\\"username\\\" property'] = membership.hasOwnProperty('username');",
+									"tests['Membership has \\\"tier\\\" property'] = membership.hasOwnProperty('tier');",
+									"tests['Membership has \\\"renewalDate\\\" property'] = membership.hasOwnProperty('renewalDate');",
+									"tests['Membership has \\\"autoRenew\\\" property'] = membership.hasOwnProperty('autoRenew');",
+									"tests['Membership has \\\"totalRevenue\\\" property'] = membership.hasOwnProperty('totalRevenue');",
+									"tests['Membership has \\\"totalViews\\\" property'] = membership.hasOwnProperty('totalViews');",
+									"",
+									"pm.test('autoRenew match expected', () => {",
+									"    pm.expect(membership.autoRenew).to.equal(false);",
+									"});",
+									"pm.test('username match expected', () => {",
+									"    pm.expect(membership.username).to.equal(\"gold_user\");",
+									"});",
+									"pm.test('tier match expected', () => {",
+									"    pm.expect(membership.tier).to.equal(\"Gold\");",
+									"});",
+									"pm.test('renewalDate match expected', () => {",
+									"    var expected = new Date(pm.globals.get('gold_renew'));",
+									"    var actual = new Date(membership.renewalDate);",
+									"",
+									"    pm.expect(actual.getUTCDate()).to.equal(expected.getUTCDate());",
+									"    pm.expect(actual.getUTCMonth()).to.equal(expected.getUTCMonth());",
+									"    pm.expect(actual.getUTCFullYear()).to.equal(expected.getUTCFullYear());",
+									"});",
+									"pm.test('totalRevenue match expected', () => {",
+									"    pm.expect(membership.totalRevenue).to.equal(0.25);",
+									"});",
+									"",
+									"pm.test('totalViews match expected', () => {",
+									"    pm.expect(membership.totalViews).to.equal(1);",
+									"});",
+									"",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token {{gold_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"membership\": {\n    \"tier\": \"Free\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{APIURL}}/membership",
+							"host": [
+								"{{APIURL}}"
+							],
+							"path": [
+								"membership"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

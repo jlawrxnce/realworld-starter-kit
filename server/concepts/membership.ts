@@ -81,7 +81,7 @@ export default class MembershipConcept {
         if (membership.tier !== Tier.Free) {
           await this.memberships.partialUpdateOne({ owner }, { tier: Tier.Free, lastActiveMembership: membership.renewalDate });
         }
-        return requiredTier === Tier.Free;
+        return false;
       }
 
       // For Gold tier access, both Gold and Trial are allowed
@@ -91,7 +91,7 @@ export default class MembershipConcept {
 
       return membership.tier === requiredTier;
     } catch {
-      return requiredTier === Tier.Free; // If no membership found, only allow Free tier access
+      return false; // If no membership found, only allow Free tier access
     }
   }
 

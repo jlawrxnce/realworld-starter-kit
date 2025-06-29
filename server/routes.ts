@@ -420,7 +420,7 @@ class Routes {
     if (!result) throw new Error("Failed to activate membership");
     const profile = await Profile.getProfileById(userId);
     const totalRevenue = await Revenue.getTotalRevenue(userId);
-    
+
     // Count total views for all articles authored by this user
     const articles = await Article.getByAuthor(userId);
     let totalViews = null;
@@ -431,29 +431,39 @@ class Routes {
         totalViews += viewCount;
       }
     }
-    
-    return Merge.createTransformedResponse("membership", (merged) => ({ 
-      ...merged, 
-      username: profile.username, 
-      totalRevenue,
-      totalViews
-    }), EMPTY_MEMBERSHIP.membership, result);
+
+    return Merge.createTransformedResponse(
+      "membership",
+      (merged) => ({
+        ...merged,
+        username: profile.username,
+        totalRevenue,
+        totalViews,
+      }),
+      EMPTY_MEMBERSHIP.membership,
+      result,
+    );
   }
 
   @Router.put("/membership")
   async updateMembership(membership: MembershipRequest, auth: string) {
     const userId = await Jwt.authenticate(auth);
     const currentMembership = await Membership.getByOwner(userId);
-    
+
     // Prevent Gold users from demoting to Trial
     if (currentMembership.tier === Tier.Gold && membership.tier === Tier.Trial) {
       throw new NotAllowedError("Gold users cannot downgrade to Trial tier");
     }
-    
-    const result = await Membership.updateMembership(userId, membership);
+
+    let result;
+    if (currentMembership.tier === Tier.Gold && membership.tier === Tier.Free) {
+      result = await Membership.updateMembership(userId, { autoRenew: false });
+    } else {
+      result = await Membership.updateMembership(userId, membership);
+    }
     const profile = await Profile.getProfileById(userId);
     const totalRevenue = await Revenue.getTotalRevenue(userId);
-    
+
     // Count total views for all articles authored by this user
     const articles = await Article.getByAuthor(userId);
     let totalViews = null;
@@ -464,13 +474,18 @@ class Routes {
         totalViews += viewCount;
       }
     }
-    
-    return Merge.createTransformedResponse("membership", (merged) => ({ 
-      ...merged, 
-      username: profile.username,
-      totalRevenue,
-      totalViews
-    }), EMPTY_MEMBERSHIP.membership, result);
+
+    return Merge.createTransformedResponse(
+      "membership",
+      (merged) => ({
+        ...merged,
+        username: profile.username,
+        totalRevenue,
+        totalViews,
+      }),
+      EMPTY_MEMBERSHIP.membership,
+      result,
+    );
   }
 
   @Router.get("/membership")
@@ -480,7 +495,7 @@ class Routes {
     if (!result) throw new Error("Membership not found");
     const profile = await Profile.getProfileById(userId);
     const totalRevenue = await Revenue.getTotalRevenue(userId);
-    
+
     // Count total views for all articles authored by this user
     const articles = await Article.getByAuthor(userId);
     let totalViews = null;
@@ -491,13 +506,18 @@ class Routes {
         totalViews += viewCount;
       }
     }
-    
-    return Merge.createTransformedResponse("membership", (merged) => ({ 
-      ...merged, 
-      username: profile.username, 
-      totalRevenue,
-      totalViews
-    }), EMPTY_MEMBERSHIP.membership, result);
+
+    return Merge.createTransformedResponse(
+      "membership",
+      (merged) => ({
+        ...merged,
+        username: profile.username,
+        totalRevenue,
+        totalViews,
+      }),
+      EMPTY_MEMBERSHIP.membership,
+      result,
+    );
   }
 
   @Router.put("/articles/:slug/paywall")
@@ -507,33 +527,33 @@ class Routes {
     if (article.author.toString() !== userId.toString()) {
       throw new Error("Only the article author can toggle the paywall");
     }
-    
+
     // Get user membership
     const membership = await Membership.getByOwner(userId);
     if (membership.tier === Tier.Free) {
       throw new NotAllowedError("Free users cannot enable paywalls");
     }
-    
+
     // Check if this is enabling a paywall
     const currentPaywall = await Paywall.getByContent(article._id);
     if (!currentPaywall?.enabled && membership.tier === Tier.Trial) {
       // Count existing active paywalls for Trial users
       const userArticles = await Article.getByAuthor(userId);
       let activePaywallCount = 0;
-      
+
       for (const userArticle of userArticles) {
         const articlePaywall = await Paywall.getByContent(userArticle._id);
         if (articlePaywall?.enabled) {
           activePaywallCount++;
         }
       }
-      
+
       // Trial users can only have 3 active paywalls
       if (activePaywallCount >= 3) {
         throw new NotAllowedError("Trial users can only have up to 3 active paywalls");
       }
     }
-    
+
     const paywall = await Paywall.toggle(article._id);
     const author = await Profile.getProfileById(article.author);
     const favorites = await Favorite.getFavorites(article._id);
@@ -575,14 +595,14 @@ class Routes {
 
     return Merge.createTransformedResponse("article", (merged) => ({ ...merged, tagList, favorited, favoritesCount, hasPaywall: paywall?.enabled }), EMPTY_ARTICLE.article, article, profileMessage);
   }
-  
+
   @Router.put("/membership/renew")
   async renewMembership(auth: string) {
     const userId = await Jwt.authenticate(auth);
     const result = await Membership.renewMembership(userId);
     const profile = await Profile.getProfileById(userId);
     const totalRevenue = await Revenue.getTotalRevenue(userId);
-    
+
     // Count total views for all articles authored by this user
     const articles = await Article.getByAuthor(userId);
     let totalViews = 0; // Always non-null since only Trial/Gold can renew
@@ -590,13 +610,18 @@ class Routes {
       const viewCount = await View.countByTarget(article._id);
       totalViews += viewCount;
     }
-    
-    return Merge.createTransformedResponse("membership", (merged) => ({ 
-      ...merged, 
-      username: profile.username, 
-      totalRevenue,
-      totalViews
-    }), EMPTY_MEMBERSHIP.membership, result);
+
+    return Merge.createTransformedResponse(
+      "membership",
+      (merged) => ({
+        ...merged,
+        username: profile.username,
+        totalRevenue,
+        totalViews,
+      }),
+      EMPTY_MEMBERSHIP.membership,
+      result,
+    );
   }
 }
 
