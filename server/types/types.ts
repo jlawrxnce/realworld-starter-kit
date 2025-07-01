@@ -6,6 +6,7 @@ export type UserRequest = {
   password: string;
   image: string;
   bio: string;
+  hasPaywall?: boolean;
 };
 
 export type ArticleRequest = {

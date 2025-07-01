@@ -33,15 +33,15 @@ class Routes {
       throw new UnprocessableEntityError("Cannot activate Free tier membership");
     }
     const newMembership = await Membership.create(userId, membership.tier as Tier);
-    
+
     // Create a subscription for the membership
     const duration = membership.tier === Tier.Trial ? 7 : 30; // 7 days for Trial, 30 for Gold
-    await Subscription.create(userId, new Date(), duration);
-    
+    await Subscription.create(userId, userId, duration);
+
     const account = await Account.getAccountById(userId);
     const totalRevenue = await Revenue.getTotalRevenue(userId);
     const totalViews = await View.getTotalArticleViewsForAuthor(userId);
-    
+
     return Merge.createTransformedResponse(
       "membership",
       (merged) => ({
@@ -51,7 +51,7 @@ class Routes {
         totalViews: newMembership && newMembership.tier === Tier.Free ? null : totalViews,
       }),
       EMPTY_MEMBERSHIP.membership,
-      newMembership ?? {}
+      newMembership ?? {},
     );
   }
 
@@ -59,21 +59,21 @@ class Routes {
   async updateMembership(membership: Partial<MembershipRequest>, auth: string) {
     const userId = await Jwt.authenticate(auth);
     const currentMembership = await Membership.getMembership(userId);
-    
+
     if (currentMembership.tier === Tier.Free) {
       throw new NotAllowedError("Free users cannot update membership");
     }
-    
+
     // Gold users cannot downgrade to Trial (handled in Membership concept)
     if (currentMembership.tier === Tier.Gold && membership.tier === Tier.Trial) {
       throw new UnprocessableEntityError("Gold members cannot downgrade to Trial tier");
     }
-    
+
     const updatedMembership = await Membership.update(userId, membership);
     const totalRevenue = await Revenue.getTotalRevenue(userId);
     const totalViews = await View.getTotalArticleViewsForAuthor(userId);
     const account = await Account.getAccountById(userId);
-    
+
     return Merge.createTransformedResponse(
       "membership",
       (merged) => ({
@@ -83,32 +83,32 @@ class Routes {
         username: account.username,
       }),
       EMPTY_MEMBERSHIP.membership,
-      updatedMembership ?? {}
+      updatedMembership ?? {},
     );
   }
-  
+
   @Router.put("/membership/renew")
   async renewMembership(auth: string) {
     const userId = await Jwt.authenticate(auth);
     // Use Subscription concept to handle the renewal process
     const currentMembership = await Membership.getMembership(userId);
-    
+    console.log("currentMembership", currentMembership);
     // Create or renew the subscription
     if (currentMembership.tier === Tier.Free) {
       throw new NotAllowedError("Free users cannot renew membership");
     } else if (currentMembership.tier === Tier.Trial) {
       // Trial users upgrading to Gold
-      await Subscription.create(userId, new Date(), 30); // 30 days for Gold
+      await Subscription.create(userId, userId, 30); // 30 days for Gold
     } else {
       // Gold users renewing
-      await Subscription.renew(userId, 30); // Extend by 30 days
+      await Subscription.renew(userId, userId, 30); // Extend by 30 days
     }
-    
+
     const updatedMembership = await Membership.renew(userId);
     const totalRevenue = await Revenue.getTotalRevenue(userId);
     const totalViews = await View.getTotalArticleViewsForAuthor(userId);
     const account = await Account.getAccountById(userId);
-    
+
     return Merge.createTransformedResponse(
       "membership",
       (merged) => ({
@@ -118,7 +118,7 @@ class Routes {
         username: account.username,
       }),
       EMPTY_MEMBERSHIP.membership,
-      updatedMembership ?? {}
+      updatedMembership ?? {},
     );
   }
 
@@ -139,7 +139,7 @@ class Routes {
         username: account.username,
       }),
       EMPTY_MEMBERSHIP.membership,
-      membership ?? {}
+      membership ?? {},
     );
   }
 
@@ -161,7 +161,7 @@ class Routes {
       // Record view and revenue if viewer is not the author
       // Always track the view for article statistics
       await View.create(userId, article._id, article.author, true);
-      
+
       // Only generate revenue if the author has Gold or Trial membership
       const authorMembership = await Membership.getMembership(article.author);
       if (authorMembership.tier === Tier.Gold || authorMembership.tier === Tier.Trial) {
@@ -185,21 +185,21 @@ class Routes {
   async togglePaywall(slug: string, auth: string) {
     const userId = await Jwt.authenticate(auth);
     const membership = await Membership.getMembership(userId);
-    
+
     // Only Gold or Trial members can toggle paywall
     if (membership.tier === Tier.Free) {
       throw new NotAllowedError("Only Gold or Trial members can toggle paywall");
     }
-    
+
     const article = await Article.getBySlug(slug);
     if (!article) {
       throw new NotFoundError(`Article ${slug} not found!`);
     }
-    
+
     if (article.author.toString() !== userId.toString()) {
       throw new NotAllowedError("Only the author can toggle paywall");
     }
-    
+
     // Check if user is Trial tier and enforce the 3 paywall limit
     const isTrialUser = membership.tier === Tier.Trial;
     const paywall = await Paywall.toggle(article._id, userId, isTrialUser);
@@ -217,8 +217,8 @@ class Routes {
   @Router.post("/users")
   async register(user: UserRequest) {
     const account = await Account.create(user.username, user.password, user.email);
-    const profile = await Profile.create(account._id, user.username, user.bio ?? "", user.image ?? "");
-    const token = await Jwt.create(account._id);
+    const profile = await Profile.create(account._id, user.username, user.bio, user.image);
+    const token = await Jwt.create(account._id, account.username);
     await Paywall.create(profile._id, account._id);
     await View.create(account._id, profile._id, profile._id, false);
     return Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, { token });
@@ -246,8 +246,15 @@ class Routes {
     const userId = await Jwt.authenticate(auth);
     const account = await Account.update(userId, { ...user });
     const profile = await Profile.update(userId, { ...user });
-    // Remove hasPaywall check as it's not in UserRequest type
-    // Handle paywall toggle through a separate endpoint
+    const membership = await Membership.getMembership(userId);
+
+    if (user.hasPaywall) {
+      // Only Gold or Trial members can toggle paywall
+      if (membership.tier === Tier.Free) {
+        throw new NotAllowedError("Only Gold or Trial members can toggle paywall");
+      }
+      await Paywall.toggle(userId, profile._id);
+    }
     return Merge.createResponse<UserResponse>("user", EMPTY_USER.user, account, profile, { token: auth });
   }
 
@@ -268,7 +275,7 @@ class Routes {
     if (hasPaywall && (!userId || (await Membership.getMembership(userId)).tier === Tier.Free)) {
       throw new NotAllowedError("Free users cannot view paywalled profiles");
     }
-    
+
     // Record profile view if user is authenticated
     if (userId) {
       await View.create(userId, profile._id, profile._id, false);

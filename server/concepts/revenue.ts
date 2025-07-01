@@ -17,7 +17,7 @@ export default class RevenueConcept {
   }
 
   async create(creator: ObjectId, source: ObjectId, tier: Tier) {
-    const amount = tier === Tier.Gold ? 0.25 : tier === Tier.Silver ? 0.1 : 0.0;
+    const amount = tier !== Tier.Free ? 0.25 : 0.0;
     const _id = await this.revenues.createOne({ creator, source, amount, timestamp: new Date() });
     return await this.revenues.readOne({ _id });
   }
